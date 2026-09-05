@@ -1209,8 +1209,8 @@ body.tema-escuro header{ background:rgba(15,23,18,.94); border-color:#243329; }
 body.tema-escuro .logo-word{ color:#eef6f0; }
 body.tema-escuro .nav-links a{ color:#a9b8b0; }
 body.tema-escuro .nav-links a:hover{ color:#eef6f0; }
-body.tema-escuro .dots-toggle, body.tema-escuro .user-pill, body.tema-escuro .nav-toggle{ background:#16221b; border-color:#26382e; color:#e7f0ea; }
-body.tema-escuro .dots-menu, body.tema-escuro .user-menu{ background:#16221b; border-color:#26382e; }
+body.tema-escuro .dots-toggle, body.tema-escuro .user-pill, body.tema-escuro .nav-toggle{ background:#1d2b24;; border-color:#26382e; color:#e7f0ea; }
+body.tema-escuro .dots-menu, body.tema-escuro .user-menu{ background:#1d2b24;; border-color:#26382e; }
 body.tema-escuro .dots-menu button, body.tema-escuro .dots-menu a, body.tema-escuro .user-menu button, body.tema-escuro .dots-menu-section{ color:#e7f0ea; }
 body.tema-escuro .dots-menu button:hover, body.tema-escuro .dots-menu a:hover, body.tema-escuro .user-menu button:hover{ background:#20302688; }
 body.tema-escuro .dots-menu hr{ border-color:#26382e; }
@@ -1221,7 +1221,7 @@ body.tema-escuro .mod-login-modal, body.tema-escuro .menu-week-wrap, body.tema-e
 body.tema-escuro .mod-recipe-form, body.tema-escuro .favorites-empty, body.tema-escuro .no-results,
 body.tema-escuro .site-rating-card, body.tema-escuro .featured-copy, body.tema-escuro .imc-result,
 body.tema-escuro .site-review-card{
-  background:#16221b; border-color:#26382e; color:#e7f0ea;
+  background:#1d2b24;; border-color:#26382e; color:#e7f0ea;
 }
 body.tema-escuro .recipe-body h3, body.tema-escuro .plan-card h4, body.tema-escuro .section-title h2,
 body.tema-escuro .menu-week-head h4, body.tema-escuro .account-card-head h2, body.tema-escuro .site-rating-value,
@@ -1234,16 +1234,259 @@ body.tema-escuro .mod-recipe-form select, body.tema-escuro .mod-recipe-form text
 body.tema-escuro .site-rating-comment textarea{
   background:#0f1712; border-color:#26382e; color:#e7f0ea;
 }
-body.tema-escuro .plan-card, body.tema-escuro .menu-day-tab{ background:#1b2a22; border-color:#2c4536; }
+body.tema-escuro .plan-card, body.tema-escuro .menu-day-tab{ background:#24352c;; border-color:#2c4536; }
 body.tema-escuro footer{ border-color:#26382e; }
-body.tema-escuro .subpage-header, body.tema-escuro .mod-page-header{ background:#16221b; }
-body.tema-escuro .imc-table th{ background:#1b2a22; color:#9fb0a7; }
+body.tema-escuro .subpage-header, body.tema-escuro .mod-page-header{ background:#1d2b24;; }
+body.tema-escuro .imc-table th{ background:#24352c;; color:#9fb0a7; }
 body.tema-escuro .imc-table td{ border-color:#26382e; }
-body.tema-escuro .imc-table tr:hover td, body.tema-escuro .mod-table tr:hover td{ background:#1b2a22; }
-body.tema-escuro .mod-table th{ background:#1b2a22; color:#9fb0a7; }
+body.tema-escuro .imc-table tr:hover td, body.tema-escuro .mod-table tr:hover td{ background:#24352c;; }
+body.tema-escuro .mod-table th{ background:#24352c;; color:#9fb0a7; }
 body.tema-escuro .mod-table td{ border-color:#26382e; }
 body.tema-escuro .theme-switch.on{ background:var(--mel-500); }
 body.tema-escuro .site-reviews-empty{ color:#9fb0a7; }
+
+/* =========================================================
+   AJUSTE VISUAL — MODO ESCURO (melhor contraste)
+========================================================= */
+body.tema-escuro .modal,
+body.tema-escuro .auth-modal,
+body.tema-escuro .imc-panel,
+body.tema-escuro .account-card,
+body.tema-escuro .featured-copy,
+body.tema-escuro .site-rating-card {
+  background:#202f27;
+  border-color:#344b3d;
+  color:#edf5ef;
+}
+
+/* Receita: ingredientes e modo de preparo */
+body.tema-escuro .modal-columns h4 {
+  color:#dff0e5;
+}
+body.tema-escuro .ingredient-list li {
+  color:#d7e5dc;
+  border-color:#344b3d;
+}
+body.tema-escuro .step-list li p {
+  color:#d7e5dc;
+}
+body.tema-escuro .step-list li::before {
+  background:#355545;
+  color:#eef8f1;
+}
+body.tema-escuro .step-list li:hover::before {
+  background:var(--verde-600);
+  color:white;
+}
+
+/* IMC: objetivo, resultado e plano */
+body.tema-escuro .imc-form .auth-field label {
+  color:#d7e5dc;
+}
+body.tema-escuro .imc-form select {
+  background:#18251e;
+  border-color:#3b5545;
+  color:#edf5ef;
+}
+body.tema-escuro .imc-form select:focus {
+  border-color:var(--verde-600);
+  box-shadow:0 0 0 3px rgba(82,150,111,.15);
+}
+body.tema-escuro .imc-result {
+  background:#2a4034;
+  border-color:#42624f;
+  color:#edf5ef;
+}
+body.tema-escuro .imc-result .imc-value {
+  color:#f0f8f2;
+}
+body.tema-escuro .imc-result p.imc-note {
+  color:#c1d2c8;
+}
+body.tema-escuro .plan-card {
+  background:#293e33;
+  border-color:#4b765d;
+}
+body.tema-escuro .plan-card .plan-sub,
+body.tema-escuro .plan-macros div span {
+  color:#c1d2c8;
+}
+body.tema-escuro .plan-tips li {
+  color:#d7e5dc;
+}
+body.tema-escuro .plan-recipe-chip {
+  background:#334b3e;
+  border-color:#4b6757;
+  color:#e3f0e7;
+}
+body.tema-escuro .plan-recipe-chip:hover {
+  background:#3c5949;
+}
+
+/* Cardápio semanal */
+body.tema-escuro .menu-week-wrap {
+  background:#202f27;
+  border-color:#344b3d;
+}
+body.tema-escuro .menu-week-head p {
+  color:#b9ccc0;
+}
+body.tema-escuro .menu-day-tab {
+  background:#293c32;
+  border-color:#3b5545;
+  color:#d1dfd6;
+}
+body.tema-escuro .menu-day-tab:hover {
+  background:#334b3e;
+  border-color:#4d6d5a;
+}
+body.tema-escuro .menu-day-tab.active {
+  background:var(--verde-600);
+  border-color:var(--verde-600);
+  color:white;
+}
+body.tema-escuro .menu-meal-card {
+  background:#2a3d33;
+  border-color:#3b5545;
+  color:#edf5ef;
+}
+body.tema-escuro .menu-meal-card:hover {
+  background:#334b3e;
+  border-color:#52735f;
+}
+body.tema-escuro .menu-meal-card h5 {
+  color:#edf5ef;
+}
+body.tema-escuro .menu-meal-card span.kcal,
+body.tema-escuro .menu-meal-slot .horario {
+  color:#b9ccc0;
+}
+
+/* Campos do modo escuro: evitar áreas quase pretas */
+body.tema-escuro .auth-field input,
+body.tema-escuro .filter-group select,
+body.tema-escuro .mod-recipe-form input,
+body.tema-escuro .mod-recipe-form select,
+body.tema-escuro .mod-recipe-form textarea,
+body.tema-escuro #searchInput,
+body.tema-escuro .site-rating-comment textarea {
+  background:#18251e;
+  border-color:#344b3d;
+  color:#edf5ef;
+}
+
+
+/* =========================================================
+   AJUSTE FINAL — BOTÕES/FECHAR NO MODO ESCURO
+========================================================= */
+body.tema-escuro .modal-close,
+body.tema-escuro .auth-close,
+body.tema-escuro .close-modal,
+body.tema-escuro button[aria-label*="Fechar"],
+body.tema-escuro button[aria-label*="fechar"] {
+  background:#24352c !important;
+  color:#e7f0ea !important;
+  border-color:#3d5748 !important;
+}
+
+body.tema-escuro .modal-close:hover,
+body.tema-escuro .auth-close:hover,
+body.tema-escuro .close-modal:hover,
+body.tema-escuro button[aria-label*="Fechar"]:hover,
+body.tema-escuro button[aria-label*="fechar"]:hover {
+  background:#355545 !important;
+  color:#ffffff !important;
+}
+
+body.tema-escuro .site-rating-card .auth-actions,
+body.tema-escuro .site-rating-card .auth-field + button,
+body.tema-escuro .site-rating-card button {
+  color:#edf5ef !important;
+}
+
+body.tema-escuro .site-rating-card .mod-link {
+  background:transparent !important;
+  color:#9fcdb0 !important;
+  border:none !important;
+  box-shadow:none !important;
+  text-decoration:underline;
+  font-weight:700;
+}
+body.tema-escuro .site-rating-card .mod-link:hover {
+  color:#d2eedb !important;
+}
+
+body.tema-escuro .site-rating-card button:not(.primary),
+body.tema-escuro .site-rating-card .btn,
+body.tema-escuro .site-rating-card a.btn {
+  background:#293e33 !important;
+  color:#e7f0ea !important;
+  border-color:#466351 !important;
+}
+
+body.tema-escuro .site-rating-card button:not(.primary):hover,
+body.tema-escuro .site-rating-card .btn:hover,
+body.tema-escuro .site-rating-card a.btn:hover {
+  background:#3a5748 !important;
+  color:#ffffff !important;
+}
+
+/* Criar conta que aparece abaixo de "Avaliar as receitas" */
+body.tema-escuro .site-rating-card a,
+body.tema-escuro .site-rating-card .create-account,
+body.tema-escuro .site-rating-card .signup-link,
+body.tema-escuro .site-rating-card .register-link {
+  color:#a9d6b8 !important;
+}
+
+body.tema-escuro .site-rating-card a:hover,
+body.tema-escuro .site-rating-card .create-account:hover,
+body.tema-escuro .site-rating-card .signup-link:hover,
+body.tema-escuro .site-rating-card .register-link:hover {
+  color:#d4f0dc !important;
+}
+
+
+/* =========================================================
+   AJUSTE ESPECÍFICO — AVALIAÇÃO DA RECEITA NO MODO ESCURO
+========================================================= */
+body.tema-escuro .recipe-rating-block h4 {
+  color:#b9e6c7 !important;
+}
+
+body.tema-escuro .recipe-rating-block .rating-note {
+  color:#c9d9d0 !important;
+}
+
+body.tema-escuro .recipe-rating-block .mod-btn {
+  background:#355545 !important;
+  color:#f0f8f2 !important;
+  border-color:#4c6f5a !important;
+}
+
+body.tema-escuro .recipe-rating-block .mod-btn:hover {
+  background:#47705a !important;
+  color:#ffffff !important;
+  border-color:#5a856b !important;
+}
+
+
+/* =========================================================
+   AJUSTE FINAL — INFORMAÇÕES DA RECEITA NO MODO ESCURO
+   Preparo / Porções / Kcal / Proteína / Dificuldade
+========================================================= */
+body.tema-escuro .modal-stats {
+  border-bottom-color:#344b3d !important;
+}
+
+body.tema-escuro .modal-stats strong {
+  color:#b9e2c5 !important;
+}
+
+body.tema-escuro .modal-stats span {
+  color:#c7d8ce !important;
+}
+
 </style>
 </head>
 <body>
