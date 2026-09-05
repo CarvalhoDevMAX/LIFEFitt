@@ -1,0 +1,13 @@
+{
+  "name": "lifefit-backend",
+  "version": "1.0.0",
+  "description": "Backend do LifeFIT",
+  "main": "servidor.js",
+  "scripts": {
+    "start": "node servidor.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongodb": "^6.12.0"
+  }
+}
