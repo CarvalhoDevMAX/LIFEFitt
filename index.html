@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LifeFit | Comida de verdade, feita com propósito</title>
@@ -1734,6 +1734,113 @@ body.tema-escuro .modal-stats span {
   }
 }
 
+/* =========================================================
+   PERFIL ALIMENTAR — QUESTIONÁRIO E COMPATIBILIDADE
+========================================================= */
+.dp-overlay{
+  position:fixed; inset:0; background:rgba(12,25,20,.72); backdrop-filter:blur(4px);
+  display:none; align-items:center; justify-content:center; z-index:2200; padding:20px;
+  opacity:0; transition:opacity .25s var(--ease);
+}
+.dp-overlay.show{ display:flex; }
+.dp-overlay.show.in{ opacity:1; }
+.dp-modal{
+  background:white; border-radius:26px; max-width:640px; width:100%; max-height:92vh;
+  overflow-y:auto; box-shadow:0 30px 90px rgba(0,0,0,.4); position:relative; padding:40px;
+  transform:scale(.93) translateY(18px); opacity:0; transition: transform .3s var(--ease), opacity .3s var(--ease);
+}
+.dp-overlay.show.in .dp-modal{ transform:scale(1) translateY(0); opacity:1; }
+.dp-close{
+  position:absolute; top:18px; right:18px; width:36px; height:36px; border-radius:50%;
+  background:white; border:1px solid var(--linha); font-size:15px;
+  display:flex; align-items:center; justify-content:center; box-shadow:var(--sombra-sm); transition:.2s;
+}
+.dp-close:hover{ transform:rotate(90deg); background:var(--baga-100); color:var(--baga-500); }
+.dp-progress{ display:flex; gap:6px; margin-bottom:22px; }
+.dp-progress span{ flex:1; height:4px; border-radius:50px; background:var(--verde-100); }
+.dp-progress span.dp-done{ background:var(--verde-600); }
+.dp-modal h2{ font-family:var(--serif); font-size:24px; font-weight:600; margin-bottom:6px; color:var(--verde-950); }
+.dp-modal .dp-sub{ color:var(--tinta-suave); font-size:13.5px; margin-bottom:24px; }
+.dp-step{ display:none; }
+.dp-step.active{ display:block; animation: lf-fade-up .35s var(--ease) both; }
+.dp-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:10px; margin-bottom:18px; }
+.dp-check{ position:relative; }
+.dp-check input{ position:absolute; opacity:0; inset:0; width:100%; height:100%; cursor:pointer; margin:0; }
+.dp-check label{
+  display:flex; align-items:center; gap:9px; padding:11px 13px; border:1.5px solid var(--linha);
+  border-radius:12px; background:white; font-size:13.5px; font-weight:600; cursor:pointer; transition:.18s var(--ease);
+}
+.dp-check .dp-dot{ width:16px; height:16px; border:1.5px solid var(--verde-200); border-radius:5px; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; transition:.15s; }
+.dp-check .dp-dot::after{ content:""; width:8px; height:8px; border-radius:2px; background:var(--verde-600); opacity:0; transform:scale(.4); transition:.12s; }
+.dp-check input:checked + label{ border-color:var(--verde-600); background:var(--verde-100); }
+.dp-check input:checked + label .dp-dot{ border-color:var(--verde-600); }
+.dp-check input:checked + label .dp-dot::after{ opacity:1; transform:scale(1); }
+.dp-other textarea{
+  width:100%; min-height:70px; padding:12px 14px; border:1px solid var(--linha); border-radius:12px;
+  font-family:var(--sans); font-size:13.5px; resize:vertical; outline:none; transition:.15s;
+}
+.dp-other textarea:focus{ border-color:var(--verde-600); box-shadow:0 0 0 3px var(--verde-100); }
+.dp-other label{ display:block; margin-bottom:7px; font-size:11.5px; font-weight:800; letter-spacing:.03em; color:#5a6b62; text-transform:uppercase; }
+.dp-note{
+  font-size:12px; color:var(--tinta-suave); background:var(--verde-50); border-left:3px solid var(--verde-600);
+  padding:10px 13px; border-radius:8px; margin:18px 0 4px;
+}
+.dp-actions{ display:flex; gap:10px; margin-top:22px; }
+.dp-btn-back{
+  border:1.5px solid var(--linha); background:white; color:var(--tinta); padding:14px; border-radius:13px;
+  font-weight:700; font-size:14px; transition:.2s; flex:1;
+}
+.dp-btn-back:hover{ background:var(--verde-50); border-color:var(--verde-200); }
+.dp-btn-next, .dp-btn-save{
+  border:none; background:var(--verde-950); color:white; padding:14px; border-radius:13px;
+  font-weight:800; font-size:14px; transition:.2s var(--ease); flex:1;
+}
+.dp-btn-next:hover, .dp-btn-save:hover{ background:var(--verde-600); }
+.dp-skip{ text-align:center; margin-top:14px; }
+.dp-skip button{ border:none; background:none; color:var(--tinta-suave); font-size:12.5px; font-weight:600; text-decoration:underline; }
+body.dp-open{ overflow:hidden; }
+
+.compat-badge{
+  width:26px; height:26px; border-radius:50%; background:white;
+  display:flex; align-items:center; justify-content:center; font-size:13px; box-shadow:0 3px 10px rgba(0,0,0,.12);
+}
+.compat-badge.compat-verde{ background:#e3f6ea; }
+.compat-badge.compat-amarelo{ background:#fdf1d9; }
+.compat-badge.compat-vermelho{ background:#fbe4e4; }
+
+.recipe-compat-note{
+  display:flex; align-items:flex-start; gap:10px; padding:13px 16px; border-radius:12px; margin-bottom:22px;
+  font-size:13.5px; font-weight:600;
+}
+.recipe-compat-note.compat-verde{ background:var(--verde-50); color:var(--verde-800); border:1px solid var(--verde-200); }
+.recipe-compat-note.compat-amarelo{ background:#fdf6e6; color:#8a6416; border:1px solid #f0dca8; }
+.recipe-compat-note.compat-vermelho{ background:var(--baga-100); color:#8a2f2f; border:1px solid #f0c2c2; }
+
+.rec-cta{
+  background:white; border:1px dashed var(--linha); border-radius:var(--raio-lg); padding:48px 30px; text-align:center;
+}
+.rec-cta h3{ font-family:var(--serif); font-size:21px; margin-bottom:8px; color:var(--verde-950); }
+.rec-cta p{ color:var(--tinta-suave); font-size:14px; margin-bottom:20px; }
+
+.profile-tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.profile-tag{
+  font-size:12px; font-weight:700; padding:5px 12px; border-radius:50px; background:var(--verde-100); color:var(--verde-800);
+}
+.profile-tag.tag-alergia{ background:var(--baga-100); color:#8a2f2f; }
+.profile-field{ margin-bottom:16px; }
+.profile-field h5{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--tinta-suave); margin-bottom:6px; }
+
+body.tema-escuro .dp-modal{ background:#202f27; border-color:#344b3d; color:#edf5ef; }
+body.tema-escuro .dp-check label{ background:#18251e; border-color:#344b3d; color:#edf5ef; }
+body.tema-escuro .dp-check input:checked + label{ background:#293e33; border-color:var(--verde-600); }
+body.tema-escuro .dp-other textarea{ background:#18251e; border-color:#344b3d; color:#edf5ef; }
+body.tema-escuro .dp-note{ background:#24352c; color:#c1d2c8; }
+body.tema-escuro .dp-btn-back{ background:#18251e; border-color:#344b3d; color:#edf5ef; }
+body.tema-escuro .rec-cta{ background:#1d2b24; border-color:#26382e; }
+body.tema-escuro .recipe-compat-note.compat-verde{ background:#233428; border-color:#344b3d; color:#b9e6c7; }
+body.tema-escuro .recipe-compat-note.compat-amarelo{ background:#332c1c; border-color:#4d4326; color:#e8cf8f; }
+body.tema-escuro .recipe-compat-note.compat-vermelho{ background:#3a2323; border-color:#5c3535; color:#f0b8b8; }
+
 /* Proteção geral contra elementos que provoquem largura maior que a tela */
 img, video, iframe, table, input, select, textarea, button {
   max-width: 100%;
@@ -1849,11 +1956,13 @@ img, video, iframe, table, input, select, textarea, button {
       <a href="#receitas">Receitas</a>
       <a href="#shakes">Shakes</a>
       <a href="#imc">IMC &amp; Plano</a>
+      <a href="#recomendadas">Para você</a>
+      <a href="#meu-cardapio" onclick="openMyMenuPage(); return false;">Meu Cardápio</a>
       <a href="#sobre">Sobre</a>
     </nav>
     <div class="header-actions">
       <div id="headerAuthArea">
-        <button class="btn-header" id="btnCriarConta" onclick="openAuth('signup')"><span class="full-label">Entrar</span><span class="short-label">Entrar</span></button>
+        <button class="btn-header" id="btnCriarConta" onclick="openAuth('signup')"><span class="full-label">Criar conta grátis</span><span class="short-label">Entrar</span></button>
       </div>
       <div class="dots-menu-wrap">
         <button class="dots-toggle" id="dotsToggle" aria-label="Mais opções" onclick="toggleDotsMenu(event)">⋮</button>
@@ -1862,6 +1971,7 @@ img, video, iframe, table, input, select, textarea, button {
           <a href="#categorias" onclick="closeDotsMenu()">Categorias</a>
           <a href="#receitas" onclick="closeDotsMenu()">Receitas</a>
           <a href="#imc" onclick="closeDotsMenu()">IMC &amp; Plano</a>
+          <a href="#meu-cardapio" onclick="closeDotsMenu(); openMyMenuPage(); return false;">Meu Cardápio</a>
           <hr>
           <div class="dots-menu-section">Sua conta</div>
           <button type="button" onclick="closeDotsMenu(); document.getElementById('btnCriarConta') ? openAuth('signup') : openAccountPage();">
@@ -2010,6 +2120,23 @@ img, video, iframe, table, input, select, textarea, button {
 </section>
 
 <!-- =========================================================
+     RECEITAS RECOMENDADAS PARA VOCÊ (perfil alimentar)
+========================================================= -->
+<section id="recomendadas">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-title">
+        <span class="eyebrow">Seu perfil alimentar</span>
+        <h2>Receitas recomendadas para você</h2>
+        <p>Selecionamos receitas com base no seu perfil alimentar.</p>
+      </div>
+      <button class="see-all" onclick="document.getElementById('receitas').scrollIntoView({behavior:'smooth'})">Ver todas as receitas →</button>
+    </div>
+    <div id="recomendadasContent"></div>
+  </div>
+</section>
+
+<!-- =========================================================
      IMC + PLANO ALIMENTAR
 ========================================================= -->
 <section id="imc">
@@ -2043,7 +2170,7 @@ img, video, iframe, table, input, select, textarea, button {
             <option value="performance">Performance</option>
           </select>
         </div>
-        <button class="auth-submit" style="margin-bottom:0;" onclick="calcularImcESugerirPlano()">Calcular e gerar plano</button>
+        <button class="auth-submit" style="margin-bottom:0;" onclick="calcularImcESugerirPlano()">Calcular IMC e ver sugestões</button>
 
         <div class="imc-result" id="imcResultBox">
           <div class="imc-value" id="imcValue">—</div>
@@ -2052,7 +2179,6 @@ img, video, iframe, table, input, select, textarea, button {
         </div>
 
         <div id="planoContainer"></div>
-        <div id="cardapioContainer"></div>
       </div>
 
       <div class="imc-table-wrap">
@@ -2211,6 +2337,7 @@ img, video, iframe, table, input, select, textarea, button {
 
     <div class="mod-tabs">
       <button class="mod-tab-btn active" data-tab="contas" onclick="switchModTab('contas')">Contas</button>
+      <button class="mod-tab-btn" data-tab="avaliacoes" onclick="switchModTab('avaliacoes')">Avaliações</button>
       <button class="mod-tab-btn" data-tab="receitas" onclick="switchModTab('receitas')">Receitas</button>
       <button class="mod-tab-btn" data-tab="visitas" onclick="switchModTab('visitas')">Visitas ao site</button>
     </div>
@@ -2232,7 +2359,7 @@ img, video, iframe, table, input, select, textarea, button {
       <div class="mod-table-wrap">
         <table class="mod-table" id="modTable">
           <thead>
-            <tr><th>Nome</th><th>E-mail</th><th>Objetivo</th><th>IMC</th><th>Criado em</th></tr>
+            <tr><th>Nome</th><th>E-mail</th><th>Objetivo</th><th>IMC</th><th>Criado em</th><th>Ações</th></tr>
           </thead>
           <tbody id="modTableBody"></tbody>
         </table>
@@ -2245,6 +2372,25 @@ img, video, iframe, table, input, select, textarea, button {
           <button class="mod-raw-copy" onclick="copyRawJson()" id="btnCopyRaw">Copiar JSON</button>
         </div>
         <pre class="mod-raw-json" id="modRawJson">[]</pre>
+      </div>
+    </div>
+
+    <!-- ABA: AVALIAÇÕES PUBLICADAS -->
+    <div class="mod-tab-panel" id="modTabAvaliacoes">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="eyebrow">Comunidade</span>
+          <h2>Avaliações publicadas</h2>
+          <p>Remova avaliações públicas do site quando necessário.</p>
+        </div>
+        <div class="mod-actions"><button class="mod-btn" onclick="loadModAvaliacoes()">Atualizar lista ↻</button></div>
+      </div>
+      <div class="mod-table-wrap">
+        <table class="mod-table">
+          <thead><tr><th>Usuário</th><th>Nota</th><th>Comentário</th><th>Publicada em</th><th>Ações</th></tr></thead>
+          <tbody id="modReviewsTableBody"></tbody>
+        </table>
+        <div class="mod-empty" id="modReviewsEmpty">Nenhuma avaliação publicada ainda.</div>
       </div>
     </div>
 
@@ -2419,6 +2565,17 @@ img, video, iframe, table, input, select, textarea, button {
     <div class="auth-form-wrap" id="authFormWrap">
       <!-- preenchido via JS -->
     </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     MODAL DE PERFIL ALIMENTAR
+========================================================= -->
+<div class="dp-overlay" id="dpOverlay" onclick="closeDpOutside(event)">
+  <div class="dp-modal">
+    <button class="dp-close" onclick="fecharQuestionarioPerfil()">✕</button>
+    <div class="dp-progress" id="dpProgress"></div>
+    <div id="dpStepsWrap"></div>
   </div>
 </div>
 
@@ -3145,7 +3302,7 @@ function gerarPlanoHtml(objetivoId, imcResult){
   let faixa = { min: plano.caloriasBase[0], max: plano.caloriasBase[1], notaExtra:"" };
   if(imcResult) faixa = ajustarPlanoPorImc(plano, imcResult.categoria);
 
-  const receitasSugeridas = getAllRecipes()
+  const receitasSugeridas = receitasCompativeisParaPerfil()
     .filter(r => plano.categorias.includes(r.categoria))
     .slice(0, 4);
 
@@ -3163,7 +3320,7 @@ function gerarPlanoHtml(objetivoId, imcResult){
         ${plano.dicas.map(d => `<li>${d}</li>`).join("")}
       </ul>
       <div class="plan-recipes">
-        ${receitasSugeridas.map(r => `<button type="button" class="plan-recipe-chip" onclick="openRecipeById('${r.id}')">${r.nome}</button>`).join("")}
+        ${receitasSugeridas.length ? receitasSugeridas.map(r => `<button type="button" class="plan-recipe-chip" onclick="openRecipeById('${r.id}')">${r.nome}</button>`).join("") : `<span class="rating-note">Não há sugestões compatíveis para este objetivo com o perfil atual.</span>`}
       </div>
     </div>`;
 }
@@ -3199,11 +3356,6 @@ function calcularImcESugerirPlano(){
   void planoContainer.offsetWidth;
   planoContainer.innerHTML = gerarPlanoHtml(objetivo, imcResult);
 
-  if(cardapioContainer){
-    cardapioContainer.innerHTML = "";
-    void cardapioContainer.offsetWidth;
-    cardapioContainer.innerHTML = renderCardapioSemanalHtml(objetivo, "calculadora-" + objetivo);
-  }
 }
 
 /* =========================================================
@@ -3406,7 +3558,10 @@ function recipeCardHtml(r, idx){
     <div class="recipe-image-wrap">
       <img class="recipe-image" src="${r.imagem}" alt="${r.nome}" loading="lazy">
       <div class="badge-row">
-        <span class="difficulty ${difficultyClass(r.dificuldade)}">${r.dificuldade}</span>
+        <div style="display:flex; gap:6px; align-items:center;">
+          ${perfilAlimentarAtual ? (() => { const c = avaliarCompatibilidade(r, perfilAlimentarAtual); return c.status !== "neutro" ? `<span class="compat-badge compat-${c.status}" title="${c.motivos.join(', ')}">${compatIcone(c.status)}</span>` : ""; })() : ""}
+          <span class="difficulty ${difficultyClass(r.dificuldade)}">${r.dificuldade}</span>
+        </div>
         <button class="favorite-btn ${favorites.has(r.id) ? "active" : ""}" data-fav="${r.id}" aria-label="Favoritar">♥</button>
       </div>
       ${ (r.categoria === "shakes") ? `<div class="protein-ring"><b>${r.proteina}g</b><span>PROT</span></div>` : "" }
@@ -3434,7 +3589,7 @@ function attachRecipeCardEvents(card, r){
   });
 }
 
-function renderRecipes(list){
+function renderRecipesBase(list){
   const grid = document.getElementById("recipeGrid");
   const noResults = document.getElementById("noResults");
   const count = document.getElementById("resultsCount");
@@ -3459,12 +3614,23 @@ function renderRecipes(list){
 }
 
 async function persistirFavoritos(){
+  if(!usuarioLogadoEmail) return;
   try{
-    await db.set("favoritos", JSON.stringify([...favorites]), false);
+    const chave = `usuario:${usuarioLogadoEmail.toLowerCase()}`;
+    const registro = await db.get(chave, true);
+    if(!registro || !registro.value) throw new Error("Conta não encontrada.");
+    const dados = JSON.parse(registro.value);
+    dados.favoritos = [...favorites];
+    await db.set(chave, JSON.stringify(dados), true);
   }catch(err){ console.error("Erro ao salvar favoritos:", err); }
 }
 
 function toggleFavorite(id, el){
+  if(!usuarioLogadoEmail){
+    showToast("Entre ou crie uma conta para favoritar receitas.");
+    openAuth("login");
+    return;
+  }
   if(favorites.has(id)){ favorites.delete(id); el.classList.remove("active"); }
   else {
     favorites.add(id);
@@ -3483,11 +3649,16 @@ function atualizarBadgeFavoritos(){
 }
 
 async function carregarFavoritosSalvos(){
+  if(!usuarioLogadoEmail){
+    favorites = new Set();
+    atualizarBadgeFavoritos();
+    return;
+  }
   try{
-    const registro = await db.get("favoritos", false);
+    const registro = await db.get(`usuario:${usuarioLogadoEmail.toLowerCase()}`, true);
     if(registro && registro.value){
-      const ids = JSON.parse(registro.value);
-      favorites = new Set(ids);
+      const dados = JSON.parse(registro.value);
+      favorites = new Set(Array.isArray(dados.favoritos) ? dados.favoritos : []);
     }
   }catch(err){ console.error("Erro ao carregar favoritos salvos:", err); }
   atualizarBadgeFavoritos();
@@ -3554,6 +3725,16 @@ function openRecipe(r){
       </div>
     </div>
     <div class="modal-body">
+      ${ perfilAlimentarAtual ? (() => {
+          const c = avaliarCompatibilidade(r, perfilAlimentarAtual);
+          if(c.status === "neutro") return "";
+          const msg = c.status === "vermelho"
+            ? `Atenção: esta receita contém um ingrediente que você marcou como alergênico (${c.motivos.join(", ")}).`
+            : c.status === "amarelo"
+              ? `Esta receita está limitada para o seu perfil porque ${c.motivos.join("; ")}.`
+              : `Compatível com o seu perfil alimentar.`;
+          return `<div class="recipe-compat-note compat-${c.status}"><span>${compatIcone(c.status)}</span><span>${msg}</span></div>`;
+        })() : "" }
       <div class="modal-stats">
         <div><strong>${r.tempo} min</strong><span>Preparo</span></div>
         <div><strong>${r.porcoes}</strong><span>Porções</span></div>
@@ -3622,6 +3803,278 @@ const GOALS = [
   { id:"performance", label:"Performance", emoji:"⚡" },
 ];
 let selectedGoal = null;
+
+/* =========================================================
+   PERFIL ALIMENTAR — QUESTIONÁRIO, TAGS E COMPATIBILIDADE
+   (baseado no questionário anexado pelo usuário)
+========================================================= */
+const PROFILE_ALLERGY_OPTIONS = [
+  { id:"gluten",     label:"Glúten" },
+  { id:"lactose",    label:"Lactose / laticínios" },
+  { id:"ovo",        label:"Ovo" },
+  { id:"amendoim",   label:"Amendoim" },
+  { id:"castanhas",  label:"Castanhas / nozes" },
+  { id:"frutos_mar", label:"Frutos do mar" },
+  { id:"peixe",      label:"Peixe" },
+  { id:"soja",       label:"Soja" },
+];
+const PROFILE_MEDICAL_OPTIONS = [
+  { id:"diabetes",    label:"Diabetes (restrição de açúcar)" },
+  { id:"sodio",       label:"Hipertensão (restrição de sódio)" },
+  { id:"colesterol",  label:"Colesterol alto" },
+  { id:"vegetariano", label:"Vegetariano" },
+  { id:"vegano",      label:"Vegano" },
+  { id:"renal",       label:"Dieta renal (restrição de potássio/fósforo)" },
+];
+const PROFILE_LABELS = {};
+[...PROFILE_ALLERGY_OPTIONS, ...PROFILE_MEDICAL_OPTIONS].forEach(o => PROFILE_LABELS[o.id] = o.label);
+
+/* perfil alimentar do usuário logado, carregado do banco (usuario:<email>.perfilAlimentar) */
+let perfilAlimentarAtual = null;
+let dpSelecaoTemp = { alergias:[], restricoes:[], outros:"" };
+let dpStepAtual = 1;
+
+function normalizarTexto(texto){
+  return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/* palavras-chave usadas para identificar alergênicos a partir dos ingredientes REAIS de cada receita */
+const TAG_KEYWORDS = {
+  gluten:     ["farinha de trigo","farinha branca","farinha de rosca","pao integral","tortilha"],
+  lactose:    ["leite","queijo","iogurte","requeijao","manteiga","creme de leite","cottage","parmesao","mucarela","ricota","catupiry","whey"],
+  ovo:        ["ovo","ovos","clara","gema","maionese"],
+  amendoim:   ["amendoim"],
+  castanhas:  ["castanha","noz","nozes","amendoa","avela"],
+  frutos_mar: ["camarao","marisco","lagosta"],
+  peixe:      ["peixe","salmao","atum","tilapia","merluza"],
+  soja:       ["soja","shoyu","tofu","edamame"],
+};
+const MEAT_KEYWORDS = ["frango","carne","bovino","suino","peixe","salmao","atum","tilapia","merluza","camarao","bacon","presunto","musculo"];
+const NON_VEGAN_EXTRA = ["mel","leite","queijo","iogurte","manteiga","requeijao","cottage","parmesao","mucarela","ricota","ovo","ovos","clara","gema","creme de leite","whey","catupiry"];
+const RESTRICTION_KEYWORDS = {
+  diabetes: ["acucar","mel","leite condensado","xarope","doce de leite","chocolate ao leite"],
+  sodio: ["sal ","shoyu","molho de soja","bacon","presunto","embutido","caldo pronto"],
+  colesterol: ["bacon","manteiga","gema","gema de ovo","creme de leite","leite condensado"],
+  renal: ["banana","abacate","castanha","feijao","espinafre","leite","iogurte"]
+};
+
+/* deduz, a partir dos ingredientes reais da receita, quais alergênicos ela contém
+   e se é vegetariana/vegana. Resultado é guardado em receita._tags (calculado uma vez). */
+function inferirTagsReceita(receita){
+  if(receita._tags) return receita._tags;
+  const texto = normalizarTexto((receita.ingredientes || []).join(" ") + " " + (receita.nome||"") + " " + (receita.descricao||""));
+  const tags = {};
+  Object.keys(TAG_KEYWORDS).forEach(id => {
+    tags[id] = TAG_KEYWORDS[id].some(kw => texto.includes(kw));
+  });
+  tags.temCarneOuPeixe = MEAT_KEYWORDS.some(kw => texto.includes(kw));
+  tags.vegetariano = !tags.temCarneOuPeixe;
+  tags.vegano = tags.vegetariano && !NON_VEGAN_EXTRA.some(kw => texto.includes(kw));
+  receita._tags = tags;
+  return tags;
+}
+
+/* compara o perfil do usuário com os ingredientes da receita.
+   vermelho = alergia (regra de segurança) · amarelo = restrição/preferência · verde = compatível */
+function avaliarCompatibilidade(receita, perfil){
+  if(!perfil) return { status:"neutro", motivos:[] };
+  const tags = inferirTagsReceita(receita);
+  const alergias = perfil.alergias || [];
+  const restricoes = perfil.restricoes || [];
+
+  const conflitosAlergia = alergias.filter(id => tags[id]);
+  if(conflitosAlergia.length){
+    return { status:"vermelho", motivos: conflitosAlergia.map(id => PROFILE_LABELS[id] || id) };
+  }
+
+  const motivosAmarelo = [];
+  if(restricoes.includes("vegetariano") && !tags.vegetariano) motivosAmarelo.push("contém carne ou peixe (você marcou vegetariano)");
+  if(restricoes.includes("vegano") && !tags.vegano) motivosAmarelo.push("contém ingrediente de origem animal (você marcou vegano)");
+
+  const textoReceitaCompleto = normalizarTexto((receita.ingredientes || []).join(" ") + " " + (receita.nome || "") + " " + (receita.descricao || ""));
+  ["diabetes", "sodio", "colesterol", "renal"].forEach(restricao => {
+    if(restricoes.includes(restricao) && RESTRICTION_KEYWORDS[restricao].some(termo => textoReceitaCompleto.includes(termo))) {
+      motivosAmarelo.push(`não é compatível com a restrição: ${PROFILE_LABELS[restricao]}`);
+    }
+  });
+
+  const outrosTexto = normalizarTexto(perfil.outros || "");
+  if(outrosTexto){
+    const termos = outrosTexto.split(/[,;\n]/).map(t => t.trim()).filter(Boolean);
+    const textoReceita = normalizarTexto((receita.ingredientes || []).join(" "));
+    termos.forEach(termo => {
+      if(termo.length > 2 && textoReceita.includes(termo)) motivosAmarelo.push(`contém "${termo}", que você marcou que evita`);
+    });
+  }
+
+  if(motivosAmarelo.length) return { status:"amarelo", motivos: motivosAmarelo };
+  return { status:"verde", motivos:[] };
+}
+
+function compatIcone(status){
+  return status === "vermelho" ? "🔴" : status === "amarelo" ? "🟡" : status === "verde" ? "🟢" : "";
+}
+
+/* ---------- modal do questionário (2 etapas: alergias → restrições + observações) ---------- */
+function dpOptionGridHtml(options, groupName, selecionados){
+  return `<div class="dp-grid">${options.map(opt => `
+    <div class="dp-check">
+      <input type="checkbox" id="dp-${groupName}-${opt.id}" value="${opt.id}" ${selecionados.includes(opt.id) ? "checked" : ""} onchange="dpToggle('${groupName}','${opt.id}',this.checked)">
+      <label for="dp-${groupName}-${opt.id}"><span class="dp-dot"></span><span>${opt.label}</span></label>
+    </div>`).join("")}</div>`;
+}
+
+function dpToggle(grupo, id, marcado){
+  const chave = grupo === "allergy" ? "alergias" : "restricoes";
+  const lista = dpSelecaoTemp[chave];
+  const idx = lista.indexOf(id);
+  if(marcado && idx === -1) lista.push(id);
+  if(!marcado && idx > -1) lista.splice(idx, 1);
+}
+
+function abrirQuestionarioPerfilBase(prefill){
+  dpSelecaoTemp = prefill ? {
+    alergias:[...(prefill.alergias||[])], restricoes:[...(prefill.restricoes||[])], outros: prefill.outros || ""
+  } : { alergias:[], restricoes:[], outros:"" };
+  dpStepAtual = 1;
+  dpRenderSteps();
+  const overlay = document.getElementById("dpOverlay");
+  overlay.classList.add("show");
+  document.body.classList.add("dp-open");
+  requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add("in")));
+}
+
+function dpRenderSteps(){
+  const wrap = document.getElementById("dpStepsWrap");
+  wrap.innerHTML = `
+    <div class="dp-step ${dpStepAtual===1?"active":""}" data-step="1">
+      <h2>Alergias e intolerâncias</h2>
+      <p class="dp-sub">Selecione tudo que você não pode comer. Isso é tratado como regra de segurança nas suas recomendações.</p>
+      ${dpOptionGridHtml(PROFILE_ALLERGY_OPTIONS, "allergy", dpSelecaoTemp.alergias)}
+      <div class="dp-actions">
+        <button type="button" class="dp-btn-next" onclick="dpIrPara(2)">Continuar</button>
+      </div>
+    </div>
+    <div class="dp-step ${dpStepAtual===2?"active":""}" data-step="2">
+      <h2>Restrições e preferências</h2>
+      <p class="dp-sub">Condições ou escolhas alimentares que também devem ser consideradas.</p>
+      ${dpOptionGridHtml(PROFILE_MEDICAL_OPTIONS, "medical", dpSelecaoTemp.restricoes)}
+      <div class="dp-other">
+        <label for="dpOutroInput">Outro alimento que você evita (opcional)</label>
+        <textarea id="dpOutroInput" placeholder="Ex.: gergelim, corante vermelho...">${escapeHtml(dpSelecaoTemp.outros || "")}</textarea>
+      </div>
+      <div class="dp-note">As informações são utilizadas para personalizar sua experiência no LifeFit. Em caso de alergias ou necessidades específicas, confira sempre os ingredientes das receitas e procure orientação de um profissional de saúde.</div>
+      <div class="dp-actions">
+        <button type="button" class="dp-btn-back" onclick="dpIrPara(1)">Voltar</button>
+        <button type="button" class="dp-btn-save" onclick="salvarPerfilAlimentar()">Salvar perfil</button>
+      </div>
+      <div class="dp-skip"><button type="button" onclick="fecharQuestionarioPerfil()">Responder depois</button></div>
+    </div>`;
+  document.getElementById("dpProgress").innerHTML = [1,2].map(n => `<span class="${n <= dpStepAtual ? "dp-done" : ""}"></span>`).join("");
+}
+
+function dpIrPara(passo){
+  const outroEl = document.getElementById("dpOutroInput");
+  if(outroEl) dpSelecaoTemp.outros = outroEl.value;
+  dpStepAtual = passo;
+  dpRenderSteps();
+}
+
+function fecharQuestionarioPerfil(){
+  const overlay = document.getElementById("dpOverlay");
+  overlay.classList.remove("in");
+  document.body.classList.remove("dp-open");
+  setTimeout(() => overlay.classList.remove("show"), 250);
+}
+function closeDpOutside(e){ if(e.target.id === "dpOverlay") fecharQuestionarioPerfil(); }
+
+async function salvarPerfilAlimentar(){
+  const outroEl = document.getElementById("dpOutroInput");
+  if(outroEl) dpSelecaoTemp.outros = outroEl.value.trim();
+  if(!usuarioLogadoEmail){ showToast("Crie uma conta para salvar seu perfil alimentar"); return; }
+
+  const perfil = { alergias: dpSelecaoTemp.alergias, restricoes: dpSelecaoTemp.restricoes, outros: dpSelecaoTemp.outros };
+  const botaoSalvar = document.querySelector(".dp-btn-save");
+  if(botaoSalvar){ botaoSalvar.disabled = true; botaoSalvar.textContent = "Salvando..."; }
+  try{
+    const registro = await db.get(`usuario:${usuarioLogadoEmail.toLowerCase()}`, true);
+    if(!registro || !registro.value) throw new Error("Conta não encontrada para salvar o perfil.");
+    const dados = JSON.parse(registro.value);
+    dados.perfilAlimentar = perfil;
+    dados.perfilAlimentarCompleto = true;
+    /* Um cardápio já salvo acompanha as mudanças do perfil: ele é remontado
+       somente com receitas compatíveis, mantendo objetivo e estrutura semanal. */
+    perfilAlimentarAtual = perfil;
+    if(dados.cardapioSemanal){
+      const objetivoCardapio = dados.cardapioSemanal.objetivo || dados.objetivo || "comer-melhor";
+      const novaSemana = montarSemanaCompativel(objetivoCardapio);
+      if(novaSemana){
+        dados.cardapioSemanal = {
+          ...dados.cardapioSemanal,
+          objetivo: objetivoCardapio,
+          semana: novaSemana,
+          atualizadoEm: new Date().toISOString()
+        };
+      }
+    }
+    await db.set(`usuario:${usuarioLogadoEmail.toLowerCase()}`, JSON.stringify(dados), true);
+    showToast(dados.cardapioSemanal ? "Perfil salvo e cardápio atualizado 🌿" : "Perfil alimentar salvo 🌿");
+    fecharQuestionarioPerfil();
+    renderRecomendadas();
+    applyFilters();
+    if(document.getElementById("accountPage").classList.contains("show")) openAccountPage();
+  }catch(err){
+    console.error("Erro ao salvar perfil alimentar:", err);
+    showToast("Não foi possível salvar seu perfil agora.");
+    if(botaoSalvar){ botaoSalvar.disabled = false; botaoSalvar.textContent = "Salvar perfil"; }
+  }
+}
+
+/* ---------- seção "receitas recomendadas para você" ---------- */
+function renderRecomendadasBase(){
+  const container = document.getElementById("recomendadasContent");
+  if(!container) return;
+
+  if(!usuarioLogadoEmail){
+    container.innerHTML = `
+      <div class="rec-cta">
+        <h3>Crie sua conta para receber recomendações</h3>
+        <p>Responda seu perfil alimentar e veja apenas receitas compatíveis com você.</p>
+        <button class="btn-primary" style="background:var(--verde-950); color:white; margin:auto;" onclick="openAuth('signup')">Criar conta grátis</button>
+      </div>`;
+    return;
+  }
+  if(!perfilAlimentarAtual){
+    container.innerHTML = `
+      <div class="rec-cta">
+        <h3>Complete seu perfil alimentar</h3>
+        <p>Responda o questionário rápido para começarmos a recomendar receitas para você.</p>
+        <button class="btn-primary" style="background:var(--verde-950); color:white; margin:auto;" onclick="abrirQuestionarioPerfil()">Responder agora</button>
+      </div>`;
+    return;
+  }
+  const compativeis = getAllRecipes()
+    .map(r => ({ r, c: avaliarCompatibilidade(r, perfilAlimentarAtual) }))
+    .filter(x => x.c.status === "verde")
+    .slice(0, 8);
+
+  if(compativeis.length === 0){
+    container.innerHTML = `<p class="rating-note">Não encontramos receitas totalmente compatíveis com seu perfil ainda. Ajuste seu perfil ou explore o catálogo completo.</p>`;
+    return;
+  }
+  const grid = document.createElement("div");
+  grid.className = "recipe-grid";
+  compativeis.forEach(({ r }, idx) => {
+    const card = document.createElement("article");
+    card.className = "recipe-card";
+    card.style.animationDelay = (Math.min(idx, 8) * 0.045) + "s";
+    card.innerHTML = recipeCardHtml(r, idx);
+    attachRecipeCardEvents(card, r);
+    grid.appendChild(card);
+  });
+  container.innerHTML = "";
+  container.appendChild(grid);
+}
 
 function goalGridHtml(){
   return GOALS.map(g => `
@@ -3764,6 +4217,8 @@ async function handleSignup(e){
     altura: altura > 0 ? altura : null,
     imc: imcResult ? imcResult.valor : null,
     imcCategoria: imcResult ? imcResult.categoria : null,
+    perfilAlimentar: null,
+    perfilAlimentarCompleto: false,
     criadoEm: new Date().toISOString()
   };
 
@@ -3779,22 +4234,24 @@ async function handleSignup(e){
   }
 
   usuarioLogadoEmail = email;
+  favorites = new Set();
   const planoHtml = selectedGoal ? gerarPlanoHtml(selectedGoal, imcResult) : "";
-  const cardapioHtml = selectedGoal ? renderCardapioSemanalHtml(selectedGoal, email) : "";
 
   wrap.innerHTML = `
     <div class="auth-success">
       <div class="check">✓</div>
       <h2>Conta criada, ${primeiroNome}!</h2>
       <p>${salvouNoBanco
-        ? "Seus dados foram salvos. Aqui está o plano alimentar e o cardápio semanal sugeridos para o seu objetivo:"
+        ? "Seus dados foram salvos. Você pode responder seu perfil alimentar e, depois, montar seu cardápio quando desejar."
         : "Sua conta foi criada nesta sessão, mas não foi possível salvar seus dados no banco de dados agora."}</p>
     </div>
     ${planoHtml}
-    ${cardapioHtml}
-    <button class="auth-submit" style="margin-top:18px;" onclick="closeAuth()">Começar a explorar</button>`;
+    <button class="auth-submit" style="margin-top:18px;" onclick="closeAuth(); abrirQuestionarioPerfil();">Continuar para o perfil alimentar</button>`;
 
+  perfilAlimentarAtual = null;
   setLoggedInHeader(nome);
+  await carregarFavoritosSalvos();
+  renderRecomendadas();
 }
 
 async function handleLogin(e){
@@ -3844,16 +4301,20 @@ async function handleLogin(e){
   }
 
   usuarioLogadoEmail = email;
+  perfilAlimentarAtual = dados.perfilAlimentar || null;
+  const precisaPerfil = !dados.perfilAlimentarCompleto;
 
   wrap.innerHTML = `
     <div class="auth-success">
       <div class="check">✓</div>
       <h2>Login realizado!</h2>
       <p>Bem-vindo de volta ao LifeFit.</p>
-      <button class="auth-submit" onclick="closeAuth()">Continuar</button>
+      <button class="auth-submit" onclick="closeAuth(); ${precisaPerfil ? 'abrirQuestionarioPerfil();' : ''}">${precisaPerfil ? 'Completar perfil alimentar' : 'Continuar'}</button>
     </div>`;
 
   setLoggedInHeader(nomeUsuario);
+  await carregarFavoritosSalvos();
+  renderRecomendadas();
 }
 
 /* --- cabeçalho: alterna entre botão "Criar conta grátis" e nome do usuário --- */
@@ -3891,10 +4352,14 @@ async function handleLogout(){
   try{ await db.delete("sessao:atual", false); }catch(err){ console.error("Erro ao encerrar sessão:", err); }
   usuarioLogadoEmail = null;
   usuarioLogadoNome = null;
+  perfilAlimentarAtual = null;
+  favorites = new Set();
   const area = document.getElementById("headerAuthArea");
   area.innerHTML = `<button class="btn-header" id="btnCriarConta" onclick="openAuth('signup')"><span class="full-label">Criar conta grátis</span><span class="short-label">Entrar</span></button>`;
   atualizarLabelMenuPontos();
   atualizarResumoAvaliacaoSite();
+  renderRecomendadas();
+  renderRecipes(getAllRecipes());
 }
 
 /* --- ao carregar a página, verifica se já existe uma sessão salva no banco --- */
@@ -3906,6 +4371,16 @@ async function handleLogout(){
       if(dados && dados.nome){
         usuarioLogadoEmail = dados.email || null;
         setLoggedInHeader(dados.nome);
+        try{
+          const registroUsuario = await db.get(`usuario:${dados.email.toLowerCase()}`, true);
+          if(registroUsuario && registroUsuario.value){
+            const dadosCompletos = JSON.parse(registroUsuario.value);
+            perfilAlimentarAtual = dadosCompletos.perfilAlimentar || null;
+            favorites = new Set(Array.isArray(dadosCompletos.favoritos) ? dadosCompletos.favoritos : []);
+          }
+        }catch(errPerfil){ console.error("Erro ao carregar perfil alimentar:", errPerfil); }
+        renderRecomendadas();
+        renderRecipes(getAllRecipes());
       }
     }
   }catch(err){
@@ -3969,7 +4444,27 @@ async function openAccountPage(){
   const inicial = (dados.nome || "U").charAt(0).toUpperCase();
   const imcResult = (dados.imc) ? { valor: dados.imc, categoria: dados.imcCategoria } : null;
   const planoHtml = dados.objetivo ? gerarPlanoHtml(dados.objetivo, imcResult) : `<p class="account-empty-note">Você ainda não escolheu um objetivo — atualize seu cadastro para receber um plano alimentar.</p>`;
-  const cardapioHtml = dados.objetivo ? renderCardapioSemanalHtml(dados.objetivo, usuarioLogadoEmail) : "";
+
+  const perfil = dados.perfilAlimentar || null;
+  const perfilHtml = perfil ? `
+    <div class="account-card">
+      <h2 style="font-family:var(--serif); font-size:20px; color:var(--verde-950); margin-bottom:14px;">Meu perfil alimentar</h2>
+      <div class="profile-field">
+        <h5>Alergias / intolerâncias</h5>
+        <div class="profile-tags">${ (perfil.alergias && perfil.alergias.length) ? perfil.alergias.map(id => `<span class="profile-tag tag-alergia">${PROFILE_LABELS[id]||id}</span>`).join("") : '<span class="rating-note">Nenhuma informada</span>' }</div>
+      </div>
+      <div class="profile-field">
+        <h5>Restrições e preferências</h5>
+        <div class="profile-tags">${ (perfil.restricoes && perfil.restricoes.length) ? perfil.restricoes.map(id => `<span class="profile-tag">${PROFILE_LABELS[id]||id}</span>`).join("") : '<span class="rating-note">Nenhuma informada</span>' }</div>
+      </div>
+      ${perfil.outros ? `<div class="profile-field"><h5>Outros alimentos evitados</h5><p class="rating-note">${escapeHtml(perfil.outros)}</p></div>` : ""}
+      <button class="mod-btn primary" onclick="abrirQuestionarioPerfil(perfilAlimentarAtual)">Editar perfil alimentar</button>
+    </div>` : `
+    <div class="account-card" style="text-align:center;">
+      <h2 style="font-family:var(--serif); font-size:20px; color:var(--verde-950); margin-bottom:8px;">Meu perfil alimentar</h2>
+      <p style="color:var(--tinta-suave); font-size:14px; margin-bottom:18px;">Você ainda não respondeu seu perfil alimentar.</p>
+      <button class="btn-primary" style="background:var(--verde-950); color:white; margin:auto;" onclick="abrirQuestionarioPerfil()">Responder agora</button>
+    </div>`;
 
   body.innerHTML = `
     <div class="account-card">
@@ -3989,9 +4484,14 @@ async function openAccountPage(){
         <div class="account-stat"><strong>${favorites.size}</strong><span>Receitas favoritas</span></div>
       </div>
     </div>
+    ${perfilHtml}
     <div style="max-width:760px; margin:0 auto;">
       ${planoHtml}
-      ${cardapioHtml}
+      <div class="account-card" style="margin-top:20px; text-align:center;">
+        <h2 style="font-family:var(--serif); font-size:20px; color:var(--verde-950); margin-bottom:8px;">Meu Cardápio</h2>
+        <p style="color:var(--tinta-suave); font-size:14px; margin-bottom:18px;">Seu planejamento semanal é pessoal e só é criado quando você solicitar.</p>
+        <button class="btn-primary" style="background:var(--verde-950); color:white; margin:auto;" onclick="openMyMenuPage()">Abrir Meu Cardápio</button>
+      </div>
     </div>`;
 }
 
@@ -4006,6 +4506,11 @@ function closeAccountPage(){
    PÁGINA "MINHAS RECEITAS FAVORITAS"
 ========================================================= */
 function openFavoritesPage(){
+  if(!usuarioLogadoEmail){
+    showToast("Entre ou crie uma conta para ver receitas favoritas.");
+    openAuth("login");
+    return;
+  }
   const grid = document.getElementById("favoritesGrid");
   const empty = document.getElementById("favoritesEmpty");
   const favoritas = getAllRecipes().filter(r => favorites.has(r.id));
@@ -4416,7 +4921,7 @@ carregarTemaSalvo();
 registrarVisitaHoje();
 atualizarLabelMenuPontos();
 atualizarResumoAvaliacaoSite();
-document.getElementById("cardapioContainer").innerHTML = renderCardapioSemanalHtml("emagrecer", "home-default");
+renderRecomendadas();
 
 /* =========================================================
    MODERADOR — LOGIN E PAINEL
@@ -4427,6 +4932,9 @@ const MODERADORES = [
 ];
 
 function openModLogin(){
+  /* Evita que um modal de conta aberto fique sobre o login do moderador. */
+  const authOverlay = document.getElementById("authOverlay");
+  if(authOverlay){ authOverlay.classList.remove("in", "show"); }
   document.getElementById("modError").classList.remove("show");
   document.getElementById("modUser").value = "";
   document.getElementById("modPass").value = "";
@@ -4448,7 +4956,7 @@ function closeModOutside(e){
 function handleModLogin(e){
   e.preventDefault();
   const usuario = document.getElementById("modUser").value.trim().toUpperCase();
-  const senha = document.getElementById("modPass").value;
+  const senha = document.getElementById("modPass").value.trim();
   const encontrado = MODERADORES.find(m => m.usuario === usuario && m.senha === senha);
   const erro = document.getElementById("modError");
 
@@ -4466,6 +4974,7 @@ function handleModLogin(e){
 function openModPage(nomeModerador){
   document.getElementById("modWelcome").textContent = `Olá, ${nomeModerador.charAt(0)}${nomeModerador.slice(1).toLowerCase()}`;
   const page = document.getElementById("modPage");
+  page.classList.remove("in");
   page.classList.add("show");
   document.body.classList.add("mod-open");
   requestAnimationFrame(() => requestAnimationFrame(() => page.classList.add("in")));
@@ -4485,8 +4994,10 @@ function modLogout(){
 function switchModTab(tab){
   document.querySelectorAll(".mod-tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
   document.getElementById("modTabContas").classList.toggle("active", tab === "contas");
+  document.getElementById("modTabAvaliacoes").classList.toggle("active", tab === "avaliacoes");
   document.getElementById("modTabReceitas").classList.toggle("active", tab === "receitas");
   document.getElementById("modTabVisitas").classList.toggle("active", tab === "visitas");
+  if(tab === "avaliacoes") loadModAvaliacoes();
   if(tab === "receitas") renderModRecipeTable();
   if(tab === "visitas") loadModVisitas();
 }
@@ -4527,7 +5038,8 @@ async function loadModUsers(){
           <td>${dados.email || "—"}</td>
           <td>${dados.objetivo || "—"}</td>
           <td>${imcTexto}</td>
-          <td>${criado}</td>`;
+          <td>${criado}</td>
+          <td><button class="mod-btn small danger" onclick="excluirContaModerador('${encodeURIComponent(chave)}')">Excluir</button></td>`;
         tbody.appendChild(tr);
       }catch(errItem){
         console.error("Erro ao ler cadastro do banco de dados:", errItem);
@@ -4540,6 +5052,60 @@ async function loadModUsers(){
   }
 
   atualizarRawJson();
+}
+
+async function excluirContaModerador(chaveCodificada){
+  const chave = decodeURIComponent(chaveCodificada);
+  if(!confirm("Excluir esta conta permanentemente? O usuário perderá seu perfil, cardápio e favoritos salvos.")) return;
+  try{
+    await db.delete(chave, true);
+    showToast("Conta excluída.");
+    await loadModUsers();
+  }catch(err){
+    console.error("Erro ao excluir conta:", err);
+    showToast("Não foi possível excluir a conta.");
+  }
+}
+
+async function loadModAvaliacoes(){
+  const tbody = document.getElementById("modReviewsTableBody");
+  const empty = document.getElementById("modReviewsEmpty");
+  tbody.innerHTML = "";
+  try{
+    const lista = await db.list("avaliacaoSite:", true);
+    const chaves = (lista && lista.keys) ? lista.keys : [];
+    if(!chaves.length){ empty.classList.add("show"); return; }
+    empty.classList.remove("show");
+    for(const chave of chaves){
+      const registro = await db.get(chave, true);
+      if(!registro || !registro.value) continue;
+      let avaliacao;
+      try { avaliacao = JSON.parse(registro.value); } catch(e) { avaliacao = { nota:registro.value }; }
+      const tr = document.createElement("tr");
+      const data = avaliacao.data ? new Date(avaliacao.data).toLocaleString("pt-BR") : "—";
+      tr.innerHTML = `<td>${escapeHtml(avaliacao.nome || chave.replace("avaliacaoSite:", ""))}</td><td>${Math.max(0, Math.min(5, parseInt(avaliacao.nota, 10) || 0))} ★</td><td>${escapeHtml(avaliacao.comentario || "—")}</td><td>${data}</td><td><button class="mod-btn small danger" onclick="excluirAvaliacaoModerador('${encodeURIComponent(chave)}')">Excluir</button></td>`;
+      tbody.appendChild(tr);
+    }
+    if(!tbody.children.length) empty.classList.add("show");
+  }catch(err){
+    console.error("Erro ao carregar avaliações:", err);
+    empty.classList.add("show");
+    empty.textContent = "Não foi possível carregar as avaliações agora.";
+  }
+}
+
+async function excluirAvaliacaoModerador(chaveCodificada){
+  const chave = decodeURIComponent(chaveCodificada);
+  if(!confirm("Excluir esta avaliação publicada permanentemente?")) return;
+  try{
+    await db.delete(chave, true);
+    showToast("Avaliação excluída.");
+    await atualizarResumoAvaliacaoSite();
+    await loadModAvaliacoes();
+  }catch(err){
+    console.error("Erro ao excluir avaliação:", err);
+    showToast("Não foi possível excluir a avaliação.");
+  }
 }
 
 /* --- visualização dos dados brutos (JSON) --- */
@@ -4741,6 +5307,150 @@ async function loadModVisitas(){
     console.error("Erro ao carregar visitas:", err);
     empty.classList.add("show");
   }
+}
+/* =========================================================
+   MEU CARDÁPIO — pessoal, explícito e salvo na conta
+========================================================= */
+function receitasCompativeisParaPerfil(){
+  const receitas = getAllRecipes();
+  if(!usuarioLogadoEmail || !perfilAlimentarAtual) return receitas;
+  return receitas.filter(r => avaliarCompatibilidade(r, perfilAlimentarAtual).status === "verde");
+}
+
+/* O catálogo principal passa a mostrar somente itens compatíveis quando existe perfil. */
+function applyFilters(){
+  const term = document.getElementById("searchInput").value.trim().toLowerCase();
+  const cat = document.getElementById("filterCategory").value;
+  const diff = document.getElementById("filterDifficulty").value;
+  const time = document.getElementById("filterTime").value;
+  activeCategory = cat;
+  document.querySelectorAll(".category-card").forEach(c => c.classList.remove("active"));
+  const matching = [...document.querySelectorAll(".category-card")][CATEGORIES.findIndex(c => c.id === cat)];
+  if(matching) matching.classList.add("active");
+  renderRecipes(receitasCompativeisParaPerfil().filter(r =>
+    (!term || r.nome.toLowerCase().includes(term) || r.descricao.toLowerCase().includes(term) || (r.ingredientes || []).join(" ").toLowerCase().includes(term)) &&
+    (cat === "todas" || r.categoria === cat) &&
+    (diff === "todas" || r.dificuldade === diff) &&
+    (time === "todos" || r.tempo <= parseInt(time, 10))
+  ));
+}
+function clearFilters(){
+  document.getElementById("searchInput").value = "";
+  document.getElementById("filterCategory").value = "todas";
+  document.getElementById("filterDifficulty").value = "todas";
+  document.getElementById("filterTime").value = "todos";
+  activeCategory = "todas";
+  document.querySelectorAll(".category-card").forEach((c,i) => c.classList.toggle("active", i === 0));
+  renderRecipes(receitasCompativeisParaPerfil());
+}
+
+function montarSemanaCompativel(objetivo){
+  const slots = REFEICOES_POR_OBJETIVO[objetivo] || REFEICOES_POR_OBJETIVO["comer-melhor"];
+  const receitas = receitasCompativeisParaPerfil();
+  if(!receitas.length) return null;
+  return DIAS_SEMANA.map((dia, indiceDia) => ({
+    dia,
+    refeicoes: slots.map((slot, indiceSlot) => {
+      let pool = receitas.filter(r => slot.categoriasPreferidas.includes(r.categoria));
+      if(!pool.length) pool = receitas;
+      const receita = pool[(indiceDia + indiceSlot) % pool.length];
+      return { slot:slot.label, horario:slot.horario, receitaId:receita.id };
+    })
+  }));
+}
+function cardapioSalvoHtml(cardapio){
+  const uid = "menu" + Math.random().toString(36).slice(2,8);
+  const dias = (cardapio.semana || []).map((d,i) => `<button type="button" class="menu-day-tab${i===0?" active":""}" onclick="mostrarDiaCardapio(this,${i})">${d.dia}</button>`).join("");
+  const paineis = (cardapio.semana || []).map((d,i) => `<div class="menu-day-meals" data-day-panel="${i}" style="${i ? "display:none;" : ""}">${d.refeicoes.map(ref => {
+    const r = getAllRecipes().find(x => x.id === ref.receitaId);
+    const invalida = r && perfilAlimentarAtual && avaliarCompatibilidade(r, perfilAlimentarAtual).status !== "verde";
+    return `<div class="menu-meal-card${invalida ? "" : ""}" ${r ? `onclick="abrirReceitaDoCardapio('${r.id}')"` : ""}><span class="menu-meal-slot">${ref.slot} <span class="horario">${ref.horario}</span></span><h5>${r ? escapeHtml(r.nome) : "Receita indisponível"}${invalida ? " ⚠" : ""}</h5><span class="kcal">${r ? `${r.calorias} kcal · ${r.tempo} min` : "Escolha outra receita"}</span></div>`;
+  }).join("")}</div>`).join("");
+  return `<div class="menu-week-wrap" id="${uid}"><div class="menu-week-head"><div><h4>Meu cardápio semanal</h4><p>Receitas compatíveis com seu perfil no momento da criação.</p></div></div><div class="menu-week-days">${dias}</div><div>${paineis}</div></div>`;
+}
+async function salvarNovoCardapio(){
+  if(!usuarioLogadoEmail){ showToast("Entre ou crie uma conta para montar seu cardápio."); openAuth("signup"); return; }
+  if(!perfilAlimentarAtual){ showToast("Responda seu perfil alimentar antes de montar o cardápio."); abrirQuestionarioPerfil(); return; }
+  const registro = await db.get(`usuario:${usuarioLogadoEmail.toLowerCase()}`, true);
+  const dados = registro && registro.value ? JSON.parse(registro.value) : null;
+  if(!dados) { showToast("Não foi possível carregar sua conta."); return; }
+  const objetivo = dados.objetivo || "comer-melhor";
+  const semana = montarSemanaCompativel(objetivo);
+  if(!semana){ showToast("Não há receitas compatíveis suficientes para montar seu cardápio."); return; }
+  dados.cardapioSemanal = { objetivo, semana, atualizadoEm:new Date().toISOString() };
+  await db.set(`usuario:${usuarioLogadoEmail.toLowerCase()}`, JSON.stringify(dados), true);
+  showToast("Cardápio semanal salvo na sua conta.");
+  openMyMenuPage();
+}
+async function atualizarCardapioSalvoParaPerfil(dados){
+  if(!dados || !dados.cardapioSemanal || !perfilAlimentarAtual) return false;
+  const atual = dados.cardapioSemanal;
+  const possuiIncompativel = (atual.semana || []).some(dia => (dia.refeicoes || []).some(ref => {
+    const receita = getAllRecipes().find(r => r.id === ref.receitaId);
+    return !receita || avaliarCompatibilidade(receita, perfilAlimentarAtual).status !== "verde";
+  }));
+  if(!possuiIncompativel) return false;
+  const objetivo = atual.objetivo || dados.objetivo || "comer-melhor";
+  const semana = montarSemanaCompativel(objetivo);
+  if(!semana) return false;
+  dados.cardapioSemanal = { ...atual, objetivo, semana, atualizadoEm:new Date().toISOString() };
+  await db.set(`usuario:${usuarioLogadoEmail.toLowerCase()}`, JSON.stringify(dados), true);
+  return true;
+}
+async function openMyMenuPage(){
+  const body = document.getElementById("accountPageBody");
+  const page = document.getElementById("accountPage");
+  page.classList.add("show"); document.body.classList.add("subpage-open");
+  requestAnimationFrame(() => requestAnimationFrame(() => page.classList.add("in")));
+  if(!usuarioLogadoEmail){
+    body.innerHTML = `<div class="account-card" style="text-align:center"><h2 style="font-family:var(--serif)">Meu Cardápio</h2><p style="margin:12px 0 20px;color:var(--tinta-suave)">Crie uma conta ou entre na sua conta para montar e salvar seu cardápio personalizado.</p><button class="btn-primary" style="background:var(--verde-950);color:white" onclick="closeAccountPage();openAuth('signup')">Criar conta ou entrar</button></div>`;
+    return;
+  }
+  let dados; try {
+    const r = await db.get(`usuario:${usuarioLogadoEmail.toLowerCase()}`, true);
+    dados = r && r.value ? JSON.parse(r.value) : null;
+    if(dados) await atualizarCardapioSalvoParaPerfil(dados);
+  } catch(e) { console.error("Erro ao atualizar cardápio:", e); }
+  const possuiPerfil = !!(dados && dados.perfilAlimentarCompleto && perfilAlimentarAtual);
+  const cardapio = dados && dados.cardapioSemanal;
+  body.innerHTML = `<div id="meu-cardapio" class="account-card" style="max-width:900px;margin:0 auto"><div class="section-title"><span class="eyebrow">Planejamento pessoal</span><h2>Meu Cardápio</h2><p>${possuiPerfil ? "Seu planejamento usa apenas receitas compatíveis com o perfil alimentar salvo." : "Responda o perfil alimentar para criar um planejamento seguro e personalizado."}</p></div>${!possuiPerfil ? `<button class="btn-primary" style="margin-top:20px;background:var(--verde-950);color:white" onclick="abrirQuestionarioPerfil()">Responder questionário</button>` : cardapio ? `${cardapioSalvoHtml(cardapio)}<button class="btn-outline" style="margin-top:18px" onclick="salvarNovoCardapio()">Gerar novo cardápio semanal</button>` : `<div class="rec-cta" style="margin-top:24px"><h3>Você ainda não possui um cardápio.</h3><p>Monte seu primeiro planejamento semanal usando receitas compatíveis com seu perfil.</p><button class="btn-primary" style="background:var(--verde-950);color:white" onclick="salvarNovoCardapio()">Montar meu cardápio</button></div>`}</div>`;
+}
+
+/* Ao alterar o perfil, o cardápio anterior é mantido, mas receitas incompatíveis ficam sinalizadas. */
+async function avisarCardapioIncompativel(cardapio){
+  if(!cardapio || !perfilAlimentarAtual) return;
+  const possuiIncompativel = (cardapio.semana || []).some(dia =>
+    (dia.refeicoes || []).some(ref => {
+      const receita = getAllRecipes().find(x => x.id === ref.receitaId);
+      return receita && avaliarCompatibilidade(receita, perfilAlimentarAtual).status !== "verde";
+    })
+  );
+  if(possuiIncompativel) showToast("Perfil salvo. Seu cardápio tem receitas marcadas para substituir.");
+}
+
+function renderRecomendadas(){
+  renderRecomendadasBase();
+  /* Mantém o catálogo visível coerente com o perfil após login, sessão restaurada ou edição. */
+  if(usuarioLogadoEmail && perfilAlimentarAtual) applyFilters();
+}
+
+/* Fecha a subpágina antes de abrir um modal, mantendo a ação imediata para o usuário. */
+function abrirQuestionarioPerfil(prefill){
+  const contaAberta = document.getElementById("accountPage").classList.contains("show");
+  if(contaAberta) closeAccountPage();
+  abrirQuestionarioPerfilBase(prefill);
+}
+function abrirReceitaDoCardapio(id){
+  if(document.getElementById("accountPage").classList.contains("show")) closeAccountPage();
+  openRecipeById(id);
+}
+
+/* Nenhuma rotina pode renderizar receita incompatível no catálogo pessoal. */
+function renderRecipes(list){
+  const listaSegura = usuarioLogadoEmail && perfilAlimentarAtual
+    ? (list || []).filter(r => avaliarCompatibilidade(r, perfilAlimentarAtual).status === "verde")
+    : (list || []);
+  renderRecipesBase(listaSegura);
 }
 </script>
 
