@@ -1487,6 +1487,262 @@ body.tema-escuro .modal-stats span {
   color:#c7d8ce !important;
 }
 
+
+/* =========================================================
+   RESPONSIVIDADE FINAL — CELULAR
+   Ajusta largura, espaçamento e evita rolagem horizontal.
+========================================================= */
+
+@media (max-width: 900px) {
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .navbar {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .logo-word {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    gap: 7px;
+  }
+
+  .btn-header {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  /* IMC: uma coluna e formulário ocupando apenas a largura disponível */
+  .imc-panel {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 20px !important;
+  }
+
+  .imc-form {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .imc-form-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .imc-form .auth-field,
+  .imc-form input,
+  .imc-form select,
+  .imc-form button {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .imc-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .imc-table {
+    min-width: 560px;
+  }
+
+  /* Cardápio */
+  .menu-week-wrap {
+    width: 100%;
+    max-width: 100%;
+    padding: 20px;
+    overflow:hidden;
+  }
+
+  .menu-week-days {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .menu-day-meals {
+    grid-template-columns: 1fr !important;
+  }
+
+  .menu-meal-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Busca */
+  .search-area {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .search-box {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .search-button {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  /* Títulos e blocos */
+  .section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .section-title h2 {
+    font-size: 28px;
+  }
+
+  .section-title p {
+    max-width: 100%;
+  }
+
+  .featured-copy {
+    padding: 30px 22px;
+  }
+
+  .featured-copy h2 {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 600px) {
+  section {
+    padding-top: 52px;
+  }
+
+  .container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .navbar {
+    padding: 10px 14px;
+  }
+
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logo-mark svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .logo-word {
+    font-size: 19px;
+  }
+
+  .btn-header {
+    padding: 8px 10px;
+    font-size: 11.5px;
+  }
+
+  .dots-toggle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .user-pill {
+    height: 36px;
+    padding-right: 10px;
+  }
+
+  .imc-panel {
+    padding: 18px !important;
+    border-radius: 20px;
+  }
+
+  .imc-panel .auth-submit {
+    font-size: 13.5px;
+    padding: 13px 12px;
+  }
+
+  .plan-card,
+  .menu-week-wrap {
+    padding: 17px;
+  }
+
+  .plan-card h4,
+  .menu-week-head h4 {
+    font-size: 18px;
+  }
+
+  .menu-meal-card {
+    padding: 14px;
+  }
+
+  .modal {
+    width: calc(100% - 24px) !important;
+    max-width: calc(100% - 24px) !important;
+    margin: 12px;
+  }
+
+  .modal-stats {
+    gap: 16px;
+  }
+
+  .modal-stats div {
+    min-width: 70px;
+  }
+
+  .modal-stats strong {
+    font-size: 16px;
+  }
+
+  .modal-stats span {
+    font-size: 10px;
+  }
+
+  .auth-modal {
+    width: calc(100% - 20px) !important;
+    max-width: calc(100% - 20px) !important;
+  }
+
+  .auth-form-wrap {
+    padding: 24px 20px 28px !important;
+  }
+
+  .auth-media {
+    padding: 26px 22px !important;
+  }
+}
+
+/* Proteção geral contra elementos que provoquem largura maior que a tela */
+img, video, iframe, table, input, select, textarea, button {
+  max-width: 100%;
+}
+
+*, *::before, *::after {
+  max-width: 100%;
+}
+
 </style>
 </head>
 <body>
