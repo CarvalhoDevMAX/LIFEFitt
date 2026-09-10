@@ -438,6 +438,49 @@ app.get("/api/auth/me", (req, res) => {
   });
 });
 
+/* Salva objetivo, IMC, cardápio e questionário no usuário autenticado. */
+app.patch("/api/auth/profile", async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: "Não autenticado."
+      });
+    }
+
+    if (
+      !req.body.profile ||
+      typeof req.body.profile !== "object" ||
+      Array.isArray(req.body.profile)
+    ) {
+      return res.status(400).json({
+        error: "Perfil inválido."
+      });
+    }
+
+    await connectDB();
+
+    await users.updateOne(
+      { _id: req.user._id },
+      {
+        $set: {
+          profile: req.body.profile,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    const user = await users.findOne({
+      _id: req.user._id
+    });
+
+    res.json({
+      user: publicUser(user)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post("/api/auth/logout", (req, res, next) => {
   req.logout((error) => {
     if (error) return next(error);

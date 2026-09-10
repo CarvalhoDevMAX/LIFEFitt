@@ -5494,7 +5494,297 @@ window.handleLogin = async function(e) { e.preventDefault(); const button = e.cu
 window.handleLogout = async function() { try { await api('/logout', { method: 'POST' }); } catch (_) {} usuarioLogadoEmail = usuarioLogadoNome = perfilAlimentarAtual = null; favorites = new Set(); document.getElementById('headerAuthArea').innerHTML = `<button class="btn-header" id="btnCriarConta" onclick="openAuth('signup')"><span class="full-label">Criar conta grátis</span><span class="short-label">Entrar</span></button>`; renderRecomendadas(); renderRecipes(getAllRecipes()); };
 function oauthResult() { const p = new URLSearchParams(location.search); const fail = p.get('auth_error'); if (fail) { const copy = { TERMS_REQUIRED: 'Você precisa aceitar os Termos de Uso e a Política de Privacidade.', ACCOUNT_LINK_REQUIRED: 'Este e-mail já possui uma conta no LifeFIT. Entre com e-mail e senha para vincular o login social.', access_denied: `Você cancelou o login com ${p.get('provider') === 'facebook' ? 'Facebook' : 'Google'}.` }; showToast(copy[fail] || `Não foi possível entrar com ${p.get('provider') === 'facebook' ? 'Facebook' : 'Google'}. Tente novamente.`); history.replaceState({}, '', location.pathname); } if (p.get('auth_success')) { api('/me').then(({ user }) => { authSuccess(user); showToast('Login realizado!'); }).catch(() => showToast('Não foi possível concluir o login. Tente novamente.')).finally(() => history.replaceState({}, '', location.pathname)); } }
 document.addEventListener('DOMContentLoaded', () => { lifefitAuthStyle(); oauthResult(); api('/me').then(({ user }) => authSuccess(user)).catch(() => {}); });
+let lifefitAuthProfile = {};
 
+const lifefitAuthSuccessBase = authSuccess;
+
+authSuccess = function (user) {
+  lifefitAuthProfile = user.profile || {};
+  lifefitAuthSuccessBase(user);
+};
+
+function lifefitSaveProfile() {
+  return api("/profile", {
+    method: "PATCH",
+    body: JSON.stringify({
+      profile: lifefitAuthProfile
+    })
+  }).then(({ user }) => {
+    lifefitAuthProfile = user.profile || {};
+    return user;
+  });
+}
+
+window.renderSignupForm = function () {
+  selectedGoal = null;
+
+  const wrap = document.getElementById("authFormWrap");
+
+  wrap.innerHTML = `
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signup')">
+        Criar conta
+      </button>
+
+      <button class="auth-tab" onclick="switchAuthTab('login')">
+        Entrar
+      </button>
+    </div>
+
+    <h2>Crie sua conta grátis</h2>
+
+    <p class="auth-sub">
+      Salve receitas favoritas, acompanhe macros e receba um plano alimentar
+      para o seu objetivo.
+    </p>
+
+    <form onsubmit="handleSignup(event)">
+      <div class="auth-field">
+        <label for="signupName">Nome completo</label>
+        <input
+          type="text"
+          id="signupName"
+          placeholder="Como podemos te chamar?"
+          required
+          maxlength="120"
+        >
+      </div>
+
+      <div class="auth-field">
+        <label for="signupEmail">E-mail</label>
+        <input
+          type="email"
+          id="signupEmail"
+          placeholder="voce@email.com"
+          required
+        >
+      </div>
+
+      <div class="auth-field-row">
+        <div class="auth-field">
+          <label for="signupPass">Senha</label>
+          <input
+            type="password"
+            id="signupPass"
+            placeholder="Mínimo 8 caracteres"
+            minlength="8"
+            required
+          >
+        </div>
+
+        <div class="auth-field">
+          <label for="signupPassConfirm">Confirmar senha</label>
+          <input
+            type="password"
+            id="signupPassConfirm"
+            placeholder="Repita a senha"
+            minlength="8"
+            required
+          >
+        </div>
+      </div>
+
+      <div class="auth-field-row">
+        <div class="auth-field">
+          <label for="signupPeso">Peso (kg) — para calcular seu IMC</label>
+          <input
+            type="number"
+            id="signupPeso"
+            placeholder="Ex: 72"
+            min="20"
+            max="300"
+            step="0.1"
+          >
+        </div>
+
+        <div class="auth-field">
+          <label for="signupAltura">Altura (cm) — para calcular seu IMC</label>
+          <input
+            type="number"
+            id="signupAltura"
+            placeholder="Ex: 170"
+            min="100"
+            max="250"
+          >
+        </div>
+      </div>
+
+      <label style="display:block;margin-bottom:7px;font-size:11.5px;font-weight:800;letter-spacing:.03em;color:#5a6b62;text-transform:uppercase;">
+        Qual seu objetivo?
+      </label>
+
+      <div class="auth-goal-grid">
+        ${goalGridHtml()}
+      </div>
+
+      <div class="auth-terms">
+        <input type="checkbox" id="signupTerms" required>
+
+        <label for="signupTerms">
+          Concordo com os
+          <a href="javascript:openLegal('terms')">Termos de Uso</a>
+          e a
+          <a href="javascript:openLegal('privacy')">Política de Privacidade</a>
+          do LifeFIT.
+        </label>
+      </div>
+
+      <button type="submit" class="auth-submit">
+        Criar minha conta
+      </button>
+    </form>
+
+    <div class="auth-divider">ou continue com</div>
+
+    <div class="auth-social">
+      ${socialButton("google", true)}
+      ${socialButton("facebook", true)}
+    </div>
+
+    <p class="auth-switch">
+      Já tem uma conta?
+      <button onclick="switchAuthTab('login')">Entrar</button>
+    </p>
+  `;
+};
+
+window.handleSignup = async function (event) {
+  event.preventDefault();
+
+  const button = event.currentTarget.querySelector("[type=submit]");
+  const name = signupName.value.trim();
+  const email = signupEmail.value.trim();
+  const password = signupPass.value;
+
+  if (password !== signupPassConfirm.value) {
+    showToast("As senhas não coincidem.");
+    return;
+  }
+
+  if (!signupTerms.checked) {
+    showToast(
+      "Você precisa aceitar os Termos de Uso e a Política de Privacidade."
+    );
+    return;
+  }
+
+  const peso = parseFloat(signupPeso.value);
+  const altura = parseFloat(signupAltura.value);
+
+  const imcResult =
+    peso > 0 && altura > 0
+      ? calcularIMC(peso, altura)
+      : null;
+
+  lifefitAuthProfile = {
+    objetivo: selectedGoal || null,
+    peso: peso > 0 ? peso : null,
+    altura: altura > 0 ? altura : null,
+    imc: imcResult ? imcResult.valor : null,
+    imcCategoria: imcResult ? imcResult.categoria : null,
+    perfilAlimentar: null,
+    perfilAlimentarCompleto: false,
+    favoritos: [],
+    cardapioSemanal: null
+  };
+
+  try {
+    setBusy(button, true, "Criando conta...");
+
+    const { user } = await api("/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        termsAccepted: true,
+        profile: lifefitAuthProfile
+      })
+    });
+
+    lifefitAuthProfile = user.profile || lifefitAuthProfile;
+
+    authSuccess(user);
+
+    const primeiroNome = name.split(" ")[0] || "por aí";
+
+    document.getElementById("authFormWrap").innerHTML = `
+      <div class="auth-success">
+        <div class="check">✓</div>
+        <h2>Conta criada, ${primeiroNome}!</h2>
+        <p>
+          Seu plano está pronto. Complete agora o perfil alimentar para receber
+          recomendações compatíveis.
+        </p>
+      </div>
+
+      ${selectedGoal ? gerarPlanoHtml(selectedGoal, imcResult) : ""}
+
+      <button
+        class="auth-submit"
+        style="margin-top:18px"
+        onclick="closeAuth();abrirQuestionarioPerfil()"
+      >
+        Continuar para o perfil alimentar
+      </button>
+    `;
+  } catch (error) {
+    showToast(message(error));
+  } finally {
+    setBusy(button, false);
+  }
+};
+
+window.salvarPerfilAlimentar = async function () {
+  const outroEl = document.getElementById("dpOutroInput");
+
+  if (outroEl) {
+    dpSelecaoTemp.outros = outroEl.value.trim();
+  }
+
+  if (!usuarioLogadoEmail) {
+    showToast("Crie uma conta para salvar seu perfil alimentar.");
+    return;
+  }
+
+  const botao = document.querySelector(".dp-btn-save");
+
+  if (botao) {
+    botao.disabled = true;
+    botao.textContent = "Salvando...";
+  }
+
+  try {
+    const perfil = {
+      alergias: dpSelecaoTemp.alergias,
+      restricoes: dpSelecaoTemp.restricoes,
+      outros: dpSelecaoTemp.outros
+    };
+
+    lifefitAuthProfile = {
+      ...lifefitAuthProfile,
+      perfilAlimentar: perfil,
+      perfilAlimentarCompleto: true
+    };
+
+    perfilAlimentarAtual = perfil;
+
+    await lifefitSaveProfile();
+
+    showToast("Perfil alimentar salvo 🌿");
+
+    fecharQuestionarioPerfil();
+    renderRecomendadas();
+    applyFilters();
+  } catch (error) {
+    showToast("Não foi possível salvar seu perfil agora.");
+
+    if (botao) {
+      botao.disabled = false;
+      botao.textContent = "Salvar perfil";
+    }
+  }
+};
 </script>
 
 </body>
