@@ -5969,7 +5969,7 @@ window.handleModLogin = async function (event) {
   const senha = document.getElementById('modPass').value;
   const erro = document.getElementById('modError');
   try {
-    const { name } = await apiModerador('/api/admin/login', {
+    const { name } = await apiModerador('/admin/login', {
       method: 'POST',
       body: JSON.stringify({ username: usuario, password: senha })
     });
@@ -5989,7 +5989,7 @@ window.loadModUsers = async function () {
   tbody.innerHTML = '';
   modUsersCache = [];
   try {
-    const { users } = await apiModerador('/api/admin/users');
+    const { users } = await apiModerador('/admin/users');
     statTotal.textContent = users.length;
     empty.classList.toggle('show', users.length === 0);
     users.forEach(user => {
