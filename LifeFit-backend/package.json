@@ -1,13 +1,21 @@
 {
   "name": "lifefit-backend",
   "version": "1.0.0",
-  "description": "Backend do LifeFIT",
   "main": "servidor.js",
   "scripts": {
     "start": "node servidor.js"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "connect-mongo": "^5.1.0",
+    "cors": "^2.8.5",
     "express": "^4.21.2",
-    "mongodb": "^6.12.0"
+    "express-rate-limit": "^7.4.0",
+    "express-session": "^1.18.1",
+    "helmet": "^7.1.0",
+    "mongodb": "^6.12.0",
+    "passport": "^0.7.0",
+    "passport-facebook": "^3.0.0",
+    "passport-google-oauth20": "^2.0.0"
   }
 }
