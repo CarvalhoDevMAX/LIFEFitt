@@ -438,49 +438,6 @@ app.get("/api/auth/me", (req, res) => {
   });
 });
 
-/* Salva objetivo, IMC, cardápio e questionário no usuário autenticado. */
-app.patch("/api/auth/profile", async (req, res, next) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: "Não autenticado."
-      });
-    }
-
-    if (
-      !req.body.profile ||
-      typeof req.body.profile !== "object" ||
-      Array.isArray(req.body.profile)
-    ) {
-      return res.status(400).json({
-        error: "Perfil inválido."
-      });
-    }
-
-    await connectDB();
-
-    await users.updateOne(
-      { _id: req.user._id },
-      {
-        $set: {
-          profile: req.body.profile,
-          updatedAt: new Date()
-        }
-      }
-    );
-
-    const user = await users.findOne({
-      _id: req.user._id
-    });
-
-    res.json({
-      user: publicUser(user)
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
 app.post("/api/auth/logout", (req, res, next) => {
   req.logout((error) => {
     if (error) return next(error);
@@ -628,6 +585,62 @@ app.post("/api/storage/delete", async (req, res) => {
       error: error.message || "Erro ao apagar no banco."
     });
   }
+});
+
+/* Perfil, painel de moderador e lista de dados públicos. */
+app.patch("/api/auth/profile", async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Não autenticado." });
+    if (!req.body.profile || typeof req.body.profile !== "object" || Array.isArray(req.body.profile)) {
+      return res.status(400).json({ error: "Perfil inválido." });
+    }
+    await connectDB();
+    await users.updateOne({ _id: req.user._id }, { $set: { profile: req.body.profile, updatedAt: new Date() } });
+    const user = await users.findOne({ _id: req.user._id });
+    res.json({ user: publicUser(user) });
+  } catch (error) { next(error); }
+});
+
+function requireModerator(req, res, next) {
+  if (req.session && req.session.isModerator === true) return next();
+  res.status(401).json({ error: "Acesso de moderador necessário." });
+}
+
+app.post("/api/admin/login", loginLimiter, (req, res) => {
+  const expectedUser = String(process.env.MODERATOR_USERNAME || "").trim().toUpperCase();
+  const expectedPassword = String(process.env.MODERATOR_PASSWORD || "");
+  const username = String(req.body.username || "").trim().toUpperCase();
+  const password = String(req.body.password || "");
+  if (!expectedUser || !expectedPassword) return res.status(503).json({ error: "Moderador ainda não foi configurado." });
+  if (username !== expectedUser || password !== expectedPassword) return res.status(401).json({ error: "Usuário ou senha incorretos." });
+  req.session.isModerator = true;
+  req.session.moderatorName = expectedUser;
+  req.session.save(error => error ? res.status(500).json({ error: "Não foi possível iniciar a sessão." }) : res.json({ name: expectedUser }));
+});
+
+app.get("/api/admin/users", requireModerator, async (req, res, next) => {
+  try {
+    await connectDB();
+    const rows = await users.find({}, { projection: { passwordHash: 0, googleId: 0, facebookId: 0, providers: 0 } }).sort({ createdAt: -1 }).toArray();
+    res.json({ users: rows.map(user => ({
+      id: user._id.toString(), name: user.name, email: user.email, provider: user.provider,
+      createdAt: user.createdAt, profile: user.profile || {}
+    })) });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/storage/list", async (req, res) => {
+  try {
+    const prefix = typeof req.query.prefix === "string" ? req.query.prefix : "";
+    if (prefix.length > 300) return res.status(400).json({ error: "O prefixo é muito longo." });
+    if (prefix.startsWith("usuario:") || prefix === "sessao:") return res.status(403).json({ error: "Dados privados não podem ser listados por esta rota." });
+    const shared = normalizarShared(req.query.shared);
+    const clientId = shared ? null : normalizarClientId(req.query.clientId);
+    await connectDB();
+    const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const docs = await storage.find({ shared, clientId, key: { $regex: new RegExp("^" + escapedPrefix) } }, { projection: { _id: 0, key: 1 } }).sort({ key: 1 }).toArray();
+    res.json({ keys: docs.map(doc => doc.key), prefix, shared });
+  } catch (error) { res.status(error.status || 500).json({ error: error.message || "Erro ao listar dados." }); }
 });
 
 app.get("/api/health", async (req, res) => {

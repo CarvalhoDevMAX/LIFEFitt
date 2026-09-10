@@ -5785,6 +5785,257 @@ window.salvarPerfilAlimentar = async function () {
     }
   }
 };
+function abrirModalAuthSocial() {
+  const overlay = document.getElementById("authOverlay");
+
+  overlay.classList.add("show");
+  document.body.classList.add("auth-open");
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      overlay.classList.add("in");
+    });
+  });
+}
+
+function abrirOnboardingSocial(user) {
+  lifefitAuthProfile = user.profile || {};
+
+  abrirModalAuthSocial();
+
+  const wrap = document.getElementById("authFormWrap");
+  const primeiroNome = (user.name || "você").split(" ")[0];
+
+  wrap.innerHTML = `
+    <h2>Quase lá, ${primeiroNome}!</h2>
+
+    <p class="auth-sub">
+      Conte seu objetivo e informe peso e altura para criarmos seu plano
+      alimentar personalizado.
+    </p>
+
+    <form onsubmit="salvarOnboardingSocial(event)">
+      <div class="auth-field-row">
+        <div class="auth-field">
+          <label for="socialPeso">Peso (kg)</label>
+          <input
+            type="number"
+            id="socialPeso"
+            min="20"
+            max="300"
+            step="0.1"
+            placeholder="Ex: 72"
+            required
+          >
+        </div>
+
+        <div class="auth-field">
+          <label for="socialAltura">Altura (cm)</label>
+          <input
+            type="number"
+            id="socialAltura"
+            min="100"
+            max="250"
+            placeholder="Ex: 170"
+            required
+          >
+        </div>
+      </div>
+
+      <label style="display:block;margin-bottom:7px;font-size:11.5px;font-weight:800;letter-spacing:.03em;color:#5a6b62;text-transform:uppercase;">
+        Qual seu objetivo?
+      </label>
+
+      <div class="auth-goal-grid">
+        ${goalGridHtml()}
+      </div>
+
+      <button type="submit" class="auth-submit">
+        Ver meu plano
+      </button>
+    </form>
+  `;
+
+  selectedGoal = lifefitAuthProfile.objetivo || null;
+}
+
+window.salvarOnboardingSocial = async function (event) {
+  event.preventDefault();
+
+  const button = event.currentTarget.querySelector("[type=submit]");
+
+  const peso = parseFloat(
+    document.getElementById("socialPeso").value
+  );
+
+  const altura = parseFloat(
+    document.getElementById("socialAltura").value
+  );
+
+  if (!selectedGoal) {
+    showToast("Escolha um objetivo para continuar.");
+    return;
+  }
+
+  const imcResult = calcularIMC(peso, altura);
+
+  lifefitAuthProfile = {
+    ...lifefitAuthProfile,
+    objetivo: selectedGoal,
+    peso,
+    altura,
+    imc: imcResult.valor,
+    imcCategoria: imcResult.categoria,
+    perfilAlimentar: lifefitAuthProfile.perfilAlimentar || null,
+    perfilAlimentarCompleto: !!lifefitAuthProfile.perfilAlimentarCompleto,
+    favoritos: lifefitAuthProfile.favoritos || [],
+    cardapioSemanal: lifefitAuthProfile.cardapioSemanal || null
+  };
+
+  try {
+    setBusy(button, true, "Salvando...");
+
+    await lifefitSaveProfile();
+
+    document.getElementById("authFormWrap").innerHTML = `
+      <div class="auth-success">
+        <div class="check">✓</div>
+        <h2>Seu plano está pronto!</h2>
+
+        <p>
+          Agora responda o perfil alimentar para receber receitas compatíveis
+          com você.
+        </p>
+      </div>
+
+      ${gerarPlanoHtml(selectedGoal, imcResult)}
+
+      <button
+        class="auth-submit"
+        style="margin-top:18px"
+        onclick="closeAuth();abrirQuestionarioPerfil()"
+      >
+        Continuar para o perfil alimentar
+      </button>
+    `;
+  } catch (error) {
+    showToast("Não foi possível salvar seus dados agora.");
+  } finally {
+    setBusy(button, false);
+  }
+};
+
+function oauthResult() {
+  const params = new URLSearchParams(location.search);
+
+  const fail = params.get("auth_error");
+  const provider = params.get("provider");
+
+  if (fail) {
+    const messages = {
+      TERMS_REQUIRED:
+        "Você precisa aceitar os Termos de Uso e a Política de Privacidade.",
+
+      ACCOUNT_LINK_REQUIRED:
+        "Este e-mail já possui uma conta no LifeFIT. Entre com e-mail e senha para vincular o login social.",
+
+      access_denied:
+        `Você cancelou o login com ${
+          provider === "facebook" ? "Facebook" : "Google"
+        }.`
+    };
+
+    showToast(
+      messages[fail] ||
+      `Não foi possível entrar com ${
+        provider === "facebook" ? "Facebook" : "Google"
+      }. Tente novamente.`
+    );
+
+    history.replaceState({}, "", location.pathname);
+    return;
+  }
+
+  if (params.get("auth_success")) {
+    api("/me")
+      .then(({ user }) => {
+        authSuccess(user);
+
+        history.replaceState({}, "", location.pathname);
+
+        if (!user.profile || !user.profile.objetivo) {
+          abrirOnboardingSocial(user);
+        } else {
+          showToast("Login realizado!");
+        }
+      })
+      .catch(() => {
+        showToast("Não foi possível concluir o login. Tente novamente.");
+
+        history.replaceState({}, "", location.pathname);
+      });
+  }
+}
+
+const LIFEFIT_API_BASE = LIFEFIT_AUTH_API.replace(/\/auth$/, '');
+
+async function apiModerador(path, options = {}) {
+  const response = await fetch(`${LIFEFIT_API_BASE}${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+  });
+  const data = response.status === 204 ? null : await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Não foi possível carregar os dados.');
+  return data;
+}
+
+/* Remove as credenciais expostas no JavaScript: valida agora no backend. */
+window.handleModLogin = async function (event) {
+  event.preventDefault();
+  const usuario = document.getElementById('modUser').value.trim();
+  const senha = document.getElementById('modPass').value;
+  const erro = document.getElementById('modError');
+  try {
+    const { name } = await apiModerador('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: usuario, password: senha })
+    });
+    erro.classList.remove('show');
+    closeModLogin();
+    openModPage(name);
+  } catch (error) {
+    erro.textContent = error.message;
+    erro.classList.add('show');
+  }
+};
+
+window.loadModUsers = async function () {
+  const tbody = document.getElementById('modTableBody');
+  const empty = document.getElementById('modEmpty');
+  const statTotal = document.getElementById('modStatTotal');
+  tbody.innerHTML = '';
+  modUsersCache = [];
+  try {
+    const { users } = await apiModerador('/api/admin/users');
+    statTotal.textContent = users.length;
+    empty.classList.toggle('show', users.length === 0);
+    users.forEach(user => {
+      const profile = user.profile || {};
+      modUsersCache.push({ id: user.id, nome: user.name, email: user.email, provider: user.provider, criadoEm: user.createdAt, ...profile });
+      const tr = document.createElement('tr');
+      const criado = user.createdAt ? new Date(user.createdAt).toLocaleString('pt-BR') : '—';
+      const imc = profile.imc ? `${profile.imc} · ${profile.imcCategoria || ''}` : '—';
+      tr.innerHTML = `<td>${escapeHtml(user.name || '—')}</td><td>${escapeHtml(user.email || '—')}</td><td>${escapeHtml(profile.objetivo || '—')}</td><td>${escapeHtml(imc)}</td><td>${criado}</td><td><span class="mod-recipe-badge">${escapeHtml(user.provider || 'local')}</span></td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    empty.classList.add('show');
+    empty.textContent = error.message;
+  }
+  atualizarRawJson();
+};
+
 </script>
 
 </body>
