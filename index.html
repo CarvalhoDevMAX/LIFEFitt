@@ -5949,7 +5949,7 @@ function oauthResult() {
   }
 }
 
-const LIFEFIT_API_BASE = LIFEFIT_AUTH_API.replace(/\/auth$/, '');
+const LIFEFIT_API_BASE = 'https://lifefitt.onrender.com/api';
 
 async function apiModerador(path, options = {}) {
   const response = await fetch(`${LIFEFIT_API_BASE}${path}`, {
