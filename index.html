@@ -4363,30 +4363,8 @@ async function handleLogout(){
 }
 
 /* --- ao carregar a página, verifica se já existe uma sessão salva no banco --- */
-(async function checkSessionOnLoad(){
-  try{
-    const sessao = await db.get("sessao:atual", false);
-    if(sessao && sessao.value){
-      const dados = JSON.parse(sessao.value);
-      if(dados && dados.nome){
-        usuarioLogadoEmail = dados.email || null;
-        setLoggedInHeader(dados.nome);
-        try{
-          const registroUsuario = await db.get(`usuario:${dados.email.toLowerCase()}`, true);
-          if(registroUsuario && registroUsuario.value){
-            const dadosCompletos = JSON.parse(registroUsuario.value);
-            perfilAlimentarAtual = dadosCompletos.perfilAlimentar || null;
-            favorites = new Set(Array.isArray(dadosCompletos.favoritos) ? dadosCompletos.favoritos : []);
-          }
-        }catch(errPerfil){ console.error("Erro ao carregar perfil alimentar:", errPerfil); }
-        renderRecomendadas();
-        renderRecipes(getAllRecipes());
-      }
-    }
-  }catch(err){
-    console.error("Erro ao verificar sessão salva:", err);
-  }
-})();
+
+/* Sessão agora é verificada pelo backend seguro de autenticação. */
 
 function openAuth(mode){
   if(mode === "login") renderLoginForm();
