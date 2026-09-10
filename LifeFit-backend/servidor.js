@@ -629,6 +629,24 @@ app.get("/api/admin/users", requireModerator, async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+app.delete("/api/admin/users/:id", requireModerator, async (req, res, next) => {
+  try {
+    const id = String(req.params.id || "");
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Identificador de conta inválido." });
+    }
+
+    await connectDB();
+    const result = await users.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "Conta não encontrada." });
+    }
+
+    res.status(204).end();
+  } catch (error) { next(error); }
+});
+
 app.get("/api/storage/list", async (req, res) => {
   try {
     const prefix = typeof req.query.prefix === "string" ? req.query.prefix : "";

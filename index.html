@@ -6007,6 +6007,83 @@ window.loadModUsers = async function () {
   }
   atualizarRawJson();
 };
+/* Cole este bloco no final do JavaScript do index.html. */
+
+const abrirReceitaNormal = window.openRecipeById;
+
+function abrirPainelNoLogin(titulo, conteudo) {
+  const modal = document.getElementById('authModal');
+  if (!modal) return;
+  document.getElementById('lifefit-painel-interno')?.remove();
+  const painel = document.createElement('section');
+  painel.id = 'lifefit-painel-interno';
+  painel.setAttribute('role', 'dialog');
+  painel.setAttribute('aria-modal', 'true');
+  painel.style.cssText = 'position:absolute;inset:0;z-index:50;overflow:auto;background:#fff;border-radius:0 24px 24px 0;padding:34px;color:#17362c;box-sizing:border-box;';
+  painel.innerHTML = `<button type="button" aria-label="Voltar" onclick="document.getElementById('lifefit-painel-interno').remove()" style="float:right;border:0;border-radius:999px;background:#eef5f0;color:#17362c;font-size:18px;width:38px;height:38px;cursor:pointer">×</button><h2 style="margin:0 45px 18px 0">${titulo}</h2><div style="line-height:1.65">${conteudo}</div>`;
+  modal.appendChild(painel);
+}
+
+const abrirLegalForaDoLogin = window.openLegal;
+window.openLegal = function (tipo) {
+  const loginAberto = document.getElementById('authOverlay')?.classList.contains('show');
+  if (!loginAberto) return abrirLegalForaDoLogin(tipo);
+  const fallback = tipo === 'privacy'
+    ? '<h3>Política de Privacidade</h3><p>Usamos os dados do cadastro, perfil alimentar e uso do LifeFIT para fornecer sua conta e suas recomendações. Não vendemos seus dados.</p>'
+    : '<h3>Termos de Uso — LifeFIT</h3><p>Ao criar uma conta ou usar o LifeFIT, você concorda com estes Termos e com a Política de Privacidade. O conteúdo é informativo e não substitui orientação médica ou nutricional individual.</p>';
+  const conteudo = typeof legalText !== 'undefined' && legalText[tipo] ? legalText[tipo] : fallback;
+  abrirPainelNoLogin(tipo === 'privacy' ? 'Política de Privacidade' : 'Termos de Uso', conteudo);
+};
+
+window.openRecipeById = function (id) {
+  const loginAberto = document.getElementById('authOverlay')?.classList.contains('show');
+  if (!loginAberto) return abrirReceitaNormal(id);
+  const receita = getAllRecipes().find(item => item.id === id);
+  if (!receita) return;
+  abrirPainelNoLogin(receita.nome, `
+    <img src="${receita.imagem}" alt="${receita.nome}" style="width:100%;max-height:190px;object-fit:cover;border-radius:14px;margin-bottom:14px">
+    <p><strong>${receita.calorias} kcal</strong> · ${receita.tempo} min · ${receita.porcoes} porções</p>
+    <h3>Ingredientes</h3><ul>${receita.ingredientes.map(item => `<li>${item}</li>`).join('')}</ul>
+    <h3>Modo de preparo</h3><ol>${receita.passos.map(item => `<li>${item}</li>`).join('')}</ol>
+  `);
+};
+
+window.loadModUsers = async function () {
+  const tbody = document.getElementById('modTableBody');
+  const empty = document.getElementById('modEmpty');
+  const statTotal = document.getElementById('modStatTotal');
+  tbody.innerHTML = '';
+  modUsersCache = [];
+  try {
+    const { users } = await apiModerador('/admin/users');
+    statTotal.textContent = users.length;
+    empty.classList.toggle('show', users.length === 0);
+    users.forEach(user => {
+      const profile = user.profile || {};
+      modUsersCache.push({ id: user.id, nome: user.name, email: user.email, provider: user.provider, criadoEm: user.createdAt, ...profile });
+      const tr = document.createElement('tr');
+      const criado = user.createdAt ? new Date(user.createdAt).toLocaleString('pt-BR') : '—';
+      const imc = profile.imc ? `${profile.imc} · ${profile.imcCategoria || ''}` : '—';
+      tr.innerHTML = `<td>${escapeHtml(user.name || '—')}</td><td>${escapeHtml(user.email || '—')}</td><td>${escapeHtml(profile.objetivo || '—')}</td><td>${escapeHtml(imc)}</td><td>${criado}</td><td><button type="button" class="mod-btn" onclick="excluirContaModerador('${user.id}')">Excluir</button></td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    empty.classList.add('show');
+    empty.textContent = error.message;
+  }
+  atualizarRawJson();
+};
+
+window.excluirContaModerador = async function (id) {
+  if (!confirm('Excluir esta conta permanentemente? Esta ação não pode ser desfeita.')) return;
+  try {
+    await apiModerador(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    showToast('Conta excluída com sucesso.');
+    await window.loadModUsers();
+  } catch (error) {
+    showToast(error.message || 'Não foi possível excluir a conta.');
+  }
+};
 
 </script>
 
