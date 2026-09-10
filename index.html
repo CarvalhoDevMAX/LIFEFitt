@@ -6084,6 +6084,110 @@ window.excluirContaModerador = async function (id) {
     showToast(error.message || 'Não foi possível excluir a conta.');
   }
 };
+window.openAccountPage = async function () {
+  const body = document.getElementById('accountPageBody');
+  const page = document.getElementById('accountPage');
+
+  body.innerHTML = '<p style="text-align:center;color:var(--tinta-suave);padding:60px 0">Carregando sua conta...</p>';
+  page.classList.add('show');
+  document.body.classList.add('subpage-open');
+  requestAnimationFrame(() => requestAnimationFrame(() => page.classList.add('in')));
+
+  try {
+    const { user } = await api('/me');
+    const dados = user.profile || {};
+    const perfil = dados.perfilAlimentar || null;
+    const inicial = (user.name || 'U').charAt(0).toUpperCase();
+    const imcResult = dados.imc ? { valor: dados.imc, categoria: dados.imcCategoria } : null;
+    const planoHtml = dados.objetivo
+      ? gerarPlanoHtml(dados.objetivo, imcResult)
+      : '<p class="account-empty-note">Você ainda não escolheu um objetivo. Atualize seu perfil para receber um plano.</p>';
+    const tags = (lista, classe) => Array.isArray(lista) && lista.length
+      ? lista.map(item => `<span class="profile-tag ${classe || ''}">${PROFILE_LABELS[item] || item}</span>`).join('')
+      : '<span class="rating-note">Nenhuma informada</span>';
+    const perfilHtml = perfil ? `
+      <div class="account-card">
+        <h2 style="font-family:var(--serif);font-size:20px;color:var(--verde-950);margin-bottom:14px">Meu perfil alimentar</h2>
+        <div class="profile-field"><h5>Alergias / intolerâncias</h5><div class="profile-tags">${tags(perfil.alergias, 'tag-alergia')}</div></div>
+        <div class="profile-field"><h5>Restrições e preferências</h5><div class="profile-tags">${tags(perfil.restricoes)}</div></div>
+        ${perfil.outros ? `<div class="profile-field"><h5>Outros alimentos evitados</h5><p class="rating-note">${escapeHtml(perfil.outros)}</p></div>` : ''}
+        <button class="mod-btn primary" onclick="abrirQuestionarioPerfil(perfilAlimentarAtual)">Editar perfil alimentar</button>
+      </div>` : `
+      <div class="account-card" style="text-align:center">
+        <h2 style="font-family:var(--serif);font-size:20px;color:var(--verde-950);margin-bottom:8px">Meu perfil alimentar</h2>
+        <p style="color:var(--tinta-suave);font-size:14px;margin-bottom:18px">Você ainda não respondeu seu perfil alimentar.</p>
+        <button class="btn-primary" style="background:var(--verde-950);color:#fff;margin:auto" onclick="abrirQuestionarioPerfil()">Responder agora</button>
+      </div>`;
+
+    usuarioLogadoEmail = user.email;
+    usuarioLogadoNome = user.name;
+    perfilAlimentarAtual = perfil;
+    favorites = new Set(Array.isArray(dados.favoritos) ? dados.favoritos : []);
+
+    body.innerHTML = `
+      <div class="account-card">
+        <div class="account-card-head"><div class="account-avatar">${inicial}</div><div><h2>${escapeHtml(user.name || 'Usuário')}</h2><p>${escapeHtml(user.email || '')}</p></div></div>
+        <div class="account-grid">
+          <div class="account-stat"><strong>${dados.objetivo ? (GOALS.find(goal => goal.id === dados.objetivo)?.label || dados.objetivo) : '—'}</strong><span>Objetivo</span></div>
+          <div class="account-stat"><strong>${dados.peso ? `${dados.peso} kg` : '—'}</strong><span>Peso</span></div>
+          <div class="account-stat"><strong>${dados.altura ? `${dados.altura} cm` : '—'}</strong><span>Altura</span></div>
+          <div class="account-stat"><strong>${dados.imc || '—'}</strong><span>IMC</span></div>
+          <div class="account-stat"><strong>${dados.imcCategoria || '—'}</strong><span>Classificação</span></div>
+          <div class="account-stat"><strong>${favorites.size}</strong><span>Receitas favoritas</span></div>
+        </div>
+      </div>
+      ${perfilHtml}
+      <div style="max-width:760px;margin:0 auto">${planoHtml}</div>`;
+  } catch (error) {
+    const texto = error.message === 'Não autenticado.'
+      ? 'Entre na sua conta para ver seus dados.'
+      : 'Não foi possível carregar seus dados agora. Tente novamente.';
+    body.innerHTML = `<div class="account-card" style="text-align:center"><h2 style="font-family:var(--serif);font-size:22px;margin-bottom:10px">${texto}</h2><button class="btn-primary" style="background:var(--verde-950);color:#fff;margin:auto" onclick="closeAccountPage();openAuth('login')">Entrar</button></div>`;
+  }
+};
+const abrirLegalAnterior = window.openLegal;
+
+function textoLegalMobile(tipo) {
+  const fallback = tipo === 'privacy'
+    ? '<h1>Política de Privacidade</h1><p>Usamos os dados do cadastro, perfil alimentar e uso do LifeFIT para fornecer sua conta e suas recomendações. Não vendemos seus dados.</p>'
+    : '<h1>Termos de Uso — LifeFIT</h1><p>Ao criar uma conta ou usar o LifeFIT, você concorda com estes Termos e com a Política de Privacidade.</p><h2>Uso do serviço</h2><p>O LifeFIT disponibiliza receitas e ferramentas de planejamento alimentar. O conteúdo é informativo e não substitui orientação médica ou nutricional individual.</p>';
+  return typeof legalText !== 'undefined' && legalText[tipo] ? legalText[tipo] : fallback;
+}
+
+function adicionarEstiloTermosMobile() {
+  if (document.getElementById('lifefit-termos-mobile-css')) return;
+  const style = document.createElement('style');
+  style.id = 'lifefit-termos-mobile-css';
+  style.textContent = `
+    body.lifefit-termos-mobile-abertos { overflow: hidden !important; }
+    #lifefit-termos-mobile { position: fixed; inset: 0; z-index: 10050; background: #fffdf9; color: #17362c; display: flex; flex-direction: column; }
+    #lifefit-termos-mobile header { flex: 0 0 auto; display: flex; gap: 14px; align-items: center; padding: 18px 20px; border-bottom: 1px solid #dce9e1; background: #fff; }
+    #lifefit-termos-mobile button { border: 0; background: #eaf4ee; color: #17362c; border-radius: 999px; width: 42px; height: 42px; font-size: 26px; line-height: 1; cursor: pointer; }
+    #lifefit-termos-mobile header strong { font-size: 19px; }
+    #lifefit-termos-mobile main { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 22px 44px; font-size: 16px; line-height: 1.65; }
+    #lifefit-termos-mobile h1, #lifefit-termos-mobile h2, #lifefit-termos-mobile h3 { color: #123b2b; line-height: 1.2; }
+    #lifefit-termos-mobile h1 { font-size: 28px; margin: 0 0 18px; }
+    #lifefit-termos-mobile h2 { font-size: 22px; margin-top: 28px; }
+    #lifefit-termos-mobile p { margin: 0 0 16px; }
+  `;
+  document.head.appendChild(style);
+}
+
+window.fecharTermosMobile = function () {
+  document.getElementById('lifefit-termos-mobile')?.remove();
+  document.body.classList.remove('lifefit-termos-mobile-abertos');
+};
+
+window.openLegal = function (tipo) {
+  if (!window.matchMedia('(max-width: 640px)').matches) return abrirLegalAnterior(tipo);
+  adicionarEstiloTermosMobile();
+  window.fecharTermosMobile();
+  const tela = document.createElement('section');
+  tela.id = 'lifefit-termos-mobile';
+  tela.innerHTML = `<header><button type="button" aria-label="Voltar" onclick="fecharTermosMobile()">‹</button><strong>${tipo === 'privacy' ? 'Política de Privacidade' : 'Termos de Uso'}</strong></header><main>${textoLegalMobile(tipo)}</main>`;
+  document.body.appendChild(tela);
+  document.body.classList.add('lifefit-termos-mobile-abertos');
+};
 
 </script>
 
