@@ -4226,9 +4226,8 @@ async function handleSignup(e){
   try{
     const resultado = await db.set(`usuario:${email.toLowerCase()}`, JSON.stringify(usuario), true);
     if(resultado){
-      salvouNoBanco = true;
-      await db.set("sessao:atual", JSON.stringify({ nome, email }), false);
-    }
+  salvouNoBanco = true;
+}
   }catch(err){
     console.error("Erro ao salvar cadastro no banco de dados:", err);
   }
@@ -4294,11 +4293,7 @@ async function handleLogin(e){
   }
 
   const nomeUsuario = dados.nome || email.split("@")[0];
-  try{
-    await db.set("sessao:atual", JSON.stringify({ nome: nomeUsuario, email }), false);
-  }catch(err){
-    console.error("Erro ao salvar sessão:", err);
-  }
+
 
   usuarioLogadoEmail = email;
   perfilAlimentarAtual = dados.perfilAlimentar || null;
@@ -4349,7 +4344,6 @@ document.addEventListener("click", (e) => {
 });
 
 async function handleLogout(){
-  try{ await db.delete("sessao:atual", false); }catch(err){ console.error("Erro ao encerrar sessão:", err); }
   usuarioLogadoEmail = null;
   usuarioLogadoNome = null;
   perfilAlimentarAtual = null;
