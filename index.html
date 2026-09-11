@@ -6188,6 +6188,214 @@ window.openLegal = function (tipo) {
   document.body.appendChild(tela);
   document.body.classList.add('lifefit-termos-mobile-abertos');
 };
+/* Cole no fim do último <script> do index.html. */
+
+window.salvarPerfilAlimentar = async function () {
+  const outroEl = document.getElementById('dpOutroInput');
+  if (outroEl) dpSelecaoTemp.outros = outroEl.value.trim();
+  if (!usuarioLogadoEmail) return showToast('Crie uma conta para salvar seu perfil alimentar.');
+
+  const botao = document.querySelector('.dp-btn-save');
+  if (botao) { botao.disabled = true; botao.textContent = 'Montando cardápio...'; }
+
+  try {
+    const perfil = {
+      alergias: dpSelecaoTemp.alergias || [],
+      restricoes: dpSelecaoTemp.restricoes || [],
+      outros: dpSelecaoTemp.outros || ''
+    };
+
+    perfilAlimentarAtual = perfil;
+    const objetivo = lifefitAuthProfile.objetivo || 'comer-melhor';
+    const semana = montarSemanaCompativel(objetivo);
+
+    if (!semana) {
+      throw new Error('Não há receitas compatíveis suficientes para montar seu cardápio.');
+    }
+
+    lifefitAuthProfile = {
+      ...lifefitAuthProfile,
+      perfilAlimentar: perfil,
+      perfilAlimentarCompleto: true,
+      cardapioSemanal: {
+        objetivo,
+        semana,
+        atualizadoEm: new Date().toISOString()
+      }
+    };
+
+    await lifefitSaveProfile();
+    favorites = new Set(lifefitAuthProfile.favoritos || []);
+    fecharQuestionarioPerfil();
+    renderRecomendadas();
+    applyFilters();
+    renderRecipes(receitasCompativeisParaPerfil());
+    showToast('Perfil salvo e cardápio compatível criado 🌿');
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || 'Não foi possível salvar seu perfil agora.');
+    if (botao) { botao.disabled = false; botao.textContent = 'Salvar perfil'; }
+  }
+};
+
+window.openMyMenuPage = async function () {
+  const body = document.getElementById('accountPageBody');
+  const page = document.getElementById('accountPage');
+  page.classList.add('show');
+  document.body.classList.add('subpage-open');
+  requestAnimationFrame(() => requestAnimationFrame(() => page.classList.add('in')));
+
+  try {
+    const { user } = await api('/me');
+    lifefitAuthProfile = user.profile || {};
+    perfilAlimentarAtual = lifefitAuthProfile.perfilAlimentar || null;
+    const cardapio = lifefitAuthProfile.cardapioSemanal;
+    const possuiPerfil = !!(lifefitAuthProfile.perfilAlimentarCompleto && perfilAlimentarAtual);
+
+    body.innerHTML = `<div id="meu-cardapio" class="account-card" style="max-width:900px;margin:0 auto">
+      <div class="section-title"><span class="eyebrow">Planejamento pessoal</span><h2>Meu Cardápio</h2><p>${possuiPerfil ? 'Receitas escolhidas de acordo com suas respostas.' : 'Responda o questionário para criar um cardápio personalizado.'}</p></div>
+      ${!possuiPerfil ? '<button class="btn-primary" style="margin-top:20px;background:var(--verde-950);color:#fff" onclick="abrirQuestionarioPerfil()">Responder questionário</button>' : cardapio ? cardapioSalvoHtml(cardapio) : '<p class="account-empty-note">Seu cardápio ainda não foi criado.</p>'}
+    </div>`;
+  } catch (error) {
+    body.innerHTML = '<div class="account-card" style="text-align:center">Não foi possível carregar seu cardápio agora.</div>';
+  }
+};
+/* Cole este bloco no fim do último <script> do index.html. */
+
+function lifefitAplicarResponsividadeMobile() {
+  if (document.getElementById('lifefit-mobile-final-css')) return;
+  const style = document.createElement('style');
+  style.id = 'lifefit-mobile-final-css';
+  style.textContent = `
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { max-width: 100%; overflow-x: hidden; }
+    img, svg, video, canvas { max-width: 100%; }
+
+    @media (max-width: 640px) {
+      :root { --lifefit-mobile-space: 16px; }
+      body { font-size: 16px; overflow-x: hidden; }
+      .container, .hero, .search-area, .mod-page-body, .subpage-body { width: 100%; max-width: 100%; padding-left: var(--lifefit-mobile-space) !important; padding-right: var(--lifefit-mobile-space) !important; }
+      section { padding-top: 46px; padding-bottom: 46px; }
+      .navbar { padding: 10px var(--lifefit-mobile-space); min-height: 62px; }
+      .logo-word { font-size: 18px; }
+      .hero { margin-top: 20px; padding-left: var(--lifefit-mobile-space) !important; padding-right: var(--lifefit-mobile-space) !important; }
+      .hero-copy { padding: 30px 22px; }
+      .hero-copy h1 { font-size: clamp(31px, 10vw, 43px); line-height: 1.04; }
+      .hero-copy p { font-size: 15px; line-height: 1.55; }
+      .hero-media { min-height: 210px; }
+      .hero-buttons, .auth-social, .dp-actions, .mod-actions { display: grid; grid-template-columns: 1fr; width: 100%; gap: 10px; }
+      .hero-buttons > *, .auth-social > *, .dp-actions > *, .mod-actions > *, .btn-primary, .btn-outline, .auth-submit { width: 100%; min-height: 46px; justify-content: center; }
+      .hero-stats { gap: 16px; justify-content:space-between; }
+      .hero-stats div strong { font-size: 21px; }
+      .section-header { gap: 12px; }
+      .section-title h2, .featured-copy h2 { font-size: clamp(25px, 7vw, 31px); line-height: 1.13; }
+      .section-title p { font-size: 14px; line-height: 1.55; }
+      .featured-copy, .imc-panel, .plan-card, .menu-week-wrap, .account-card, .site-rating-card { width: 100%; max-width: 100%; padding: 18px !important; border-radius: 18px; }
+      .imc-panel, .featured-grid, .recipe-grid, .category-grid, .account-grid, .menu-day-meals, .modal-columns { grid-template-columns: 1fr !important; }
+      .account-grid { gap: 10px; }
+      .account-stat { padding: 14px 10px; min-width: 0; }
+      .account-stat strong { font-size: 15px; overflow-wrap: anywhere; }
+      .account-card-head { align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+      .account-card-head h2 { font-size: 21px; overflow-wrap: anywhere; }
+      .account-card-head p { overflow-wrap: anywhere; }
+      .imc-form-row, .auth-field-row { grid-template-columns: 1fr !important; }
+      .imc-table-wrap, .mod-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .imc-table { min-width: 540px; }
+      .plan-macros { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .plan-recipes { display: grid; grid-template-columns: 1fr; }
+      .plan-recipe-chip { width: 100%; min-height: 44px; text-align: left; }
+      .menu-week-days { margin-left: -2px; margin-right: -2px; padding: 0 2px 8px; }
+      .menu-day-tab { flex: 0 0 auto; min-height: 42px; }
+      .menu-meal-card { min-height: 72px; }
+      .search-box { padding: 8px; gap: 8px; }
+      .search-box input { min-width: 0; font-size: 14px; }
+      .search-button { min-height: 42px; padding: 8px 13px; }
+      .filter-bar, .filter-group { width: 100%; }
+      .filter-bar { display: grid; grid-template-columns: 1fr; gap: 10px; }
+      .filter-group select, .filter-group button { width: 100%; min-height: 44px; }
+      .modal-overlay, .auth-overlay, .dp-overlay { padding: 10px; align-items: flex-end; }
+      .modal, .auth-modal, .dp-modal { width: 100% !important; max-width: 100% !important; max-height: calc(100dvh - 20px); margin: 0; border-radius: 22px 22px 12px 12px; }
+      .modal-hero { height: 190px; }
+      .modal-hero-title { left: 20px; bottom: 17px; right: 54px; }
+      .modal-hero-title h2 { font-size: 24px; }
+      .modal-body { padding: 20px 18px 32px; }
+      .modal-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+      .modal-stats div { min-width: 0; }
+      .auth-modal { display: block; overflow-y: auto; }
+      .auth-media { display: none; }
+      .auth-form-wrap { width: 100%; padding: 28px 20px 30px !important; }
+      .auth-form-wrap h2 { font-size: 27px; line-height: 1.15; }
+      .auth-field input, .auth-field select { min-height: 46px; font-size: 16px; }
+      .auth-social button { min-height: 48px; }
+      .dp-modal { padding: 24px 18px; }
+      .dp-modal h2 { font-size: 25px; padding-right: 30px; }
+      .dp-grid { grid-template-columns: 1fr; gap: 9px; }
+      .dp-check label { min-height: 48px; font-size: 14px; }
+      .dp-btn-back, .dp-btn-next, .dp-btn-save { min-height: 46px; }
+      .mod-page-header { padding: 13px 16px; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+      .mod-page-title { max-width: 100%; }
+      .mod-page-title .logo-word { font-size: 18px; }
+      .mod-page-user { width: 100%; justify-content: space-between; }
+      .mod-tabs { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+      .mod-tabs button { flex: 0 0 auto; min-height: 42px; }
+      .mod-stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .mod-stat-card { min-width: 0; padding: 15px; }
+      .mod-table-wrap { overflow: visible; border: 0; background: transparent; }
+      .mod-table, .mod-table tbody, .mod-table tr, .mod-table td { display: block; width: 100%; }
+      .mod-table thead { display: none; }
+      .mod-table tr { background: var(--creme, #fffdf9); border: 1px solid var(--linha, #dbe7df); border-radius: 16px; padding: 8px 14px; margin: 0 0 12px; overflow: hidden; }
+      .mod-table td { display: grid; grid-template-columns: minmax(95px, 42%) 1fr; gap: 10px; padding: 10px 0; border: 0; border-bottom: 1px solid var(--linha, #dbe7df); font-size: 13px; overflow-wrap: anywhere; }
+      .mod-table td:last-child { border-bottom: 0; }
+      .mod-table td::before { content: attr(data-label); color: var(--tinta-suave, #60736a); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+      .mod-table td button { width: 100%; min-height: 40px; }
+      .mod-raw-wrap { overflow: auto; }
+      .mod-raw-json { min-width: 0; font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    }
+    @media (max-width: 375px) {
+      .navbar { padding-left: 12px; padding-right: 12px; }
+      .container, .hero, .search-area, .mod-page-body, .subpage-body { padding-left: 12px !important; padding-right: 12px !important; }
+      .hero-copy { padding: 25px 18px; }
+      .hero-copy h1 { font-size: 30px; }
+      .btn-header .full-label { display: none; }
+      .btn-header .short-label { display: inline; }
+      .account-grid, .mod-stat-grid, .plan-macros { grid-template-columns: 1fr; }
+      .auth-form-wrap { padding-left: 16px !important; padding-right: 16px !important; }
+      .auth-form-wrap h2 { font-size: 24px; }
+      .modal-stats { grid-template-columns: 1fr 1fr; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+window.loadModUsers = async function () {
+  const tbody = document.getElementById('modTableBody');
+  const empty = document.getElementById('modEmpty');
+  const statTotal = document.getElementById('modStatTotal');
+  if (!tbody || !empty) return;
+  tbody.innerHTML = '';
+  modUsersCache = [];
+  try {
+    const { users } = await apiModerador('/admin/users');
+    if (statTotal) statTotal.textContent = users.length;
+    empty.classList.toggle('show', users.length === 0);
+    empty.textContent = users.length ? '' : 'Nenhuma conta cadastrada ainda.';
+    users.forEach(user => {
+      const profile = user.profile || {};
+      const criado = user.createdAt ? new Date(user.createdAt).toLocaleString('pt-BR') : '—';
+      const imc = profile.imc ? `${profile.imc} · ${profile.imcCategoria || ''}` : '—';
+      modUsersCache.push({ id:user.id, nome:user.name, email:user.email, provider:user.provider, criadoEm:user.createdAt, ...profile });
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td data-label="Nome">${escapeHtml(user.name || '—')}</td><td data-label="E-mail">${escapeHtml(user.email || '—')}</td><td data-label="Objetivo">${escapeHtml(profile.objetivo || '—')}</td><td data-label="IMC">${escapeHtml(imc)}</td><td data-label="Criado em">${criado}</td><td data-label="Ações"><button type="button" class="mod-btn" onclick="excluirContaModerador('${user.id}')">Excluir conta</button></td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    empty.classList.add('show');
+    empty.textContent = error.message || 'Não foi possível carregar os dados.';
+  }
+  if (typeof atualizarRawJson === 'function') atualizarRawJson();
+};
+
+lifefitAplicarResponsividadeMobile();
 
 </script>
 
