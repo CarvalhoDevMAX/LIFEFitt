@@ -6452,33 +6452,23 @@ oauthResult = function () {
   }
 };
 
-function estiloReceitaInterna() {
-  if (document.getElementById('lifefit-receita-interna-css')) return;
-  const style = document.createElement('style');
-  style.id = 'lifefit-receita-interna-css';
-  style.textContent = `body.lifefit-receita-aberta{overflow:hidden!important}#lifefit-receita-interna{position:fixed;inset:0;z-index:100000;background:rgba(5,27,19,.7);padding:14px;display:flex;align-items:center;justify-content:center}#lifefit-receita-interna article{width:min(760px,100%);max-height:calc(100dvh - 28px);overflow:auto;-webkit-overflow-scrolling:touch;background:#fffdf9;color:#17362c;border-radius:22px;padding:22px;position:relative;box-shadow:0 25px 70px rgba(0,0,0,.35)}#lifefit-receita-interna img{width:100%;height:230px;object-fit:cover;border-radius:15px;margin-bottom:16px}#lifefit-receita-interna h2{font-family:var(--serif);font-size:28px;line-height:1.15;margin:0 48px 10px 0}#lifefit-receita-interna h3{margin:20px 0 8px}#lifefit-receita-interna li{margin:7px 0;line-height:1.5}#lifefit-receita-interna button{position:absolute;right:14px;top:14px;width:42px;height:42px;border:0;border-radius:50%;background:#eef5f0;color:#17362c;font-size:25px;cursor:pointer}@media(max-width:640px){#lifefit-receita-interna{padding:0;align-items:flex-end}#lifefit-receita-interna article{width:100%;max-height:92dvh;border-radius:22px 22px 0 0;padding:18px}#lifefit-receita-interna img{height:180px}#lifefit-receita-interna h2{font-size:24px}}`;
-  document.head.appendChild(style);
-}
-
-window.fecharReceitaInterna = function () {
-  document.getElementById('lifefit-receita-interna')?.remove();
-  document.body.classList.remove('lifefit-receita-aberta');
+window.abrirReceitaDoCardapio = function (id) {
+  openRecipeById(id);
 };
 
-function abrirReceitaSemFecharPagina(receita) {
-  if (!receita) return;
-  estiloReceitaInterna();
-  window.fecharReceitaInterna();
-  const painel = document.createElement('section');
-  painel.id = 'lifefit-receita-interna';
-  painel.innerHTML = `<article role="dialog" aria-modal="true"><button type="button" aria-label="Voltar" onclick="fecharReceitaInterna()">×</button><img src="${receita.imagem}" alt="${receita.nome}"><h2>${escapeHtml(receita.nome)}</h2><p><strong>${receita.calorias} kcal</strong> · ${receita.tempo} min · ${receita.porcoes} porções</p><h3>Ingredientes</h3><ul>${receita.ingredientes.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul><h3>Modo de preparo</h3><ol>${receita.passos.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ol></article>`;
-  document.body.appendChild(painel);
-  document.body.classList.add('lifefit-receita-aberta');
-}
+window.openRecipeOriginalLifeFit = openRecipe;
 
-openRecipeById = function (id) { abrirReceitaSemFecharPagina(getAllRecipes().find(item => item.id === id)); };
-openRecipe = function (receita) { abrirReceitaSemFecharPagina(receita); };
-window.abrirReceitaDoCardapio = function (id) { openRecipeById(id); };
+openRecipeById = function (id) {
+  const receita = getAllRecipes().find(item => item.id === id);
+
+  if (receita) {
+    window.openRecipeOriginalLifeFit(receita);
+  }
+};
+
+window.abrirReceitaDoCardapio = function (id) {
+  openRecipeById(id);
+};
 
 apiModerador = async function (path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -6501,6 +6491,66 @@ window.handleModLogin = async function (event) {
     openModPage(name);
   } catch (error) { erro.textContent = error.message; erro.classList.add('show'); }
 };
+const abrirReceitaOriginalLifeFit = openRecipe;
+
+openRecipeById = function (id) {
+  const receita = getAllRecipes().find(item => item.id === id);
+
+  if (receita) {
+    abrirReceitaOriginalLifeFit(receita);
+  }
+};
+
+window.abrirReceitaDoCardapio = function (id) {
+  openRecipeById(id);
+};
+if (!window.lifeFitReceitaOriginal) {
+  window.lifeFitReceitaOriginal = openRecipe;
+}
+
+openRecipeById = function (id) {
+  const receita = getAllRecipes().find(item => item.id === id);
+
+  if (receita) {
+    window.lifeFitReceitaOriginal(receita);
+  }
+};
+
+window.abrirReceitaDoCardapio = function (id) {
+  openRecipeById(id);
+};
+/* Cole no fim do último script do index.html. */
+
+window.abrirShakesProteicos = function () {
+  const selectCategoria = document.getElementById('filterCategory');
+  const busca = document.getElementById('searchInput');
+  if (selectCategoria) selectCategoria.value = 'shakes';
+  if (busca) busca.value = '';
+  activeCategory = 'shakes';
+  applyFilters();
+  document.getElementById('receitas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+window.buscarReceitasLifeFit = function () {
+  const busca = document.getElementById('searchInput');
+  if (!busca) return;
+  applyFilters();
+  document.getElementById('receitas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const botaoShakesTopo = Array.from(document.querySelectorAll('.hero-buttons .btn-outline'))
+  .find(botao => /shake/i.test(botao.textContent));
+if (botaoShakesTopo) botaoShakesTopo.onclick = window.abrirShakesProteicos;
+
+const botaoBuscaLifeFit = document.querySelector('.search-button');
+if (botaoBuscaLifeFit) botaoBuscaLifeFit.onclick = window.buscarReceitasLifeFit;
+
+document.getElementById('searchInput')?.addEventListener('keydown', function (event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    window.buscarReceitasLifeFit();
+  }
+});
 
 </script>
 

@@ -57,9 +57,21 @@ app.set("trust proxy", 1);
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
 
+const allowedOrigins = [
+  new URL(FRONTEND_URL).origin,
+  "http://127.0.0.1:3000",
+  "http://localhost:3000"
+];
+
 app.use(
   cors({
-    origin: new URL(FRONTEND_URL).origin,
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      callback(new Error("Origem não permitida."));
+    },
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
   })
