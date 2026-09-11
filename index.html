@@ -6396,6 +6396,111 @@ window.loadModUsers = async function () {
 };
 
 lifefitAplicarResponsividadeMobile();
+/* Cole no fim do último script do index.html. Não cole fora da tag script. */
+
+const LIFEFIT_TOKEN_KEY = 'lifefit_auth_token';
+const LIFEFIT_MOD_TOKEN_KEY = 'lifefit_moderator_token';
+
+function tokenLifeFit() { return localStorage.getItem(LIFEFIT_TOKEN_KEY) || ''; }
+function tokenModeradorLifeFit() { return localStorage.getItem(LIFEFIT_MOD_TOKEN_KEY) || ''; }
+
+api = async function (path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  const token = tokenLifeFit();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${LIFEFIT_AUTH_API}${path}`, { ...options, credentials: 'include', headers });
+  const data = response.status === 204 ? null : await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || 'Não foi possível concluir esta ação. Tente novamente.');
+  if (data?.token) localStorage.setItem(LIFEFIT_TOKEN_KEY, data.token);
+  return data;
+};
+
+const authSuccessComTokenBase = authSuccess;
+authSuccess = function (user) {
+  lifefitAuthProfile = user.profile || {};
+  authSuccessComTokenBase(user);
+};
+
+window.handleLogout = async function () {
+  try { await api('/logout', { method: 'POST' }); } catch (_) {}
+  localStorage.removeItem(LIFEFIT_TOKEN_KEY);
+  usuarioLogadoEmail = null;
+  usuarioLogadoNome = null;
+  perfilAlimentarAtual = null;
+  favorites = new Set();
+  document.getElementById('headerAuthArea').innerHTML = '<button class="btn-header" id="btnCriarConta" onclick="openAuth(\'signup\')"><span class="full-label">Criar conta grátis</span><span class="short-label">Entrar</span></button>';
+  renderRecomendadas();
+  renderRecipes(getAllRecipes());
+};
+
+oauthResult = function () {
+  const params = new URLSearchParams(location.search);
+  const error = params.get('auth_error');
+  const token = params.get('auth_token');
+  if (token) localStorage.setItem(LIFEFIT_TOKEN_KEY, token);
+  if (error) {
+    showToast(error === 'TERMS_REQUIRED' ? 'Você precisa aceitar os Termos de Uso e a Política de Privacidade.' : 'Não foi possível concluir o login. Tente novamente.');
+    history.replaceState({}, '', location.pathname);
+    return;
+  }
+  if (params.get('auth_success')) {
+    api('/me').then(({ user }) => {
+      authSuccess(user);
+      if (!user.profile?.objetivo && typeof abrirOnboardingSocial === 'function') abrirOnboardingSocial(user);
+      else showToast('Login realizado!');
+    }).catch(error => showToast(error.message)).finally(() => history.replaceState({}, '', location.pathname));
+  }
+};
+
+function estiloReceitaInterna() {
+  if (document.getElementById('lifefit-receita-interna-css')) return;
+  const style = document.createElement('style');
+  style.id = 'lifefit-receita-interna-css';
+  style.textContent = `body.lifefit-receita-aberta{overflow:hidden!important}#lifefit-receita-interna{position:fixed;inset:0;z-index:100000;background:rgba(5,27,19,.7);padding:14px;display:flex;align-items:center;justify-content:center}#lifefit-receita-interna article{width:min(760px,100%);max-height:calc(100dvh - 28px);overflow:auto;-webkit-overflow-scrolling:touch;background:#fffdf9;color:#17362c;border-radius:22px;padding:22px;position:relative;box-shadow:0 25px 70px rgba(0,0,0,.35)}#lifefit-receita-interna img{width:100%;height:230px;object-fit:cover;border-radius:15px;margin-bottom:16px}#lifefit-receita-interna h2{font-family:var(--serif);font-size:28px;line-height:1.15;margin:0 48px 10px 0}#lifefit-receita-interna h3{margin:20px 0 8px}#lifefit-receita-interna li{margin:7px 0;line-height:1.5}#lifefit-receita-interna button{position:absolute;right:14px;top:14px;width:42px;height:42px;border:0;border-radius:50%;background:#eef5f0;color:#17362c;font-size:25px;cursor:pointer}@media(max-width:640px){#lifefit-receita-interna{padding:0;align-items:flex-end}#lifefit-receita-interna article{width:100%;max-height:92dvh;border-radius:22px 22px 0 0;padding:18px}#lifefit-receita-interna img{height:180px}#lifefit-receita-interna h2{font-size:24px}}`;
+  document.head.appendChild(style);
+}
+
+window.fecharReceitaInterna = function () {
+  document.getElementById('lifefit-receita-interna')?.remove();
+  document.body.classList.remove('lifefit-receita-aberta');
+};
+
+function abrirReceitaSemFecharPagina(receita) {
+  if (!receita) return;
+  estiloReceitaInterna();
+  window.fecharReceitaInterna();
+  const painel = document.createElement('section');
+  painel.id = 'lifefit-receita-interna';
+  painel.innerHTML = `<article role="dialog" aria-modal="true"><button type="button" aria-label="Voltar" onclick="fecharReceitaInterna()">×</button><img src="${receita.imagem}" alt="${receita.nome}"><h2>${escapeHtml(receita.nome)}</h2><p><strong>${receita.calorias} kcal</strong> · ${receita.tempo} min · ${receita.porcoes} porções</p><h3>Ingredientes</h3><ul>${receita.ingredientes.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul><h3>Modo de preparo</h3><ol>${receita.passos.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ol></article>`;
+  document.body.appendChild(painel);
+  document.body.classList.add('lifefit-receita-aberta');
+}
+
+openRecipeById = function (id) { abrirReceitaSemFecharPagina(getAllRecipes().find(item => item.id === id)); };
+openRecipe = function (receita) { abrirReceitaSemFecharPagina(receita); };
+window.abrirReceitaDoCardapio = function (id) { openRecipeById(id); };
+
+apiModerador = async function (path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  const token = tokenModeradorLifeFit();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${LIFEFIT_API_BASE}${path}`, { ...options, credentials: 'include', headers });
+  const data = response.status === 204 ? null : await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || 'Não foi possível carregar os dados.');
+  if (data?.token) localStorage.setItem(LIFEFIT_MOD_TOKEN_KEY, data.token);
+  return data;
+};
+
+window.handleModLogin = async function (event) {
+  event.preventDefault();
+  const erro = document.getElementById('modError');
+  try {
+    const { name } = await apiModerador('/admin/login', { method: 'POST', body: JSON.stringify({ username: document.getElementById('modUser').value.trim(), password: document.getElementById('modPass').value }) });
+    erro.classList.remove('show');
+    closeModLogin();
+    openModPage(name);
+  } catch (error) { erro.textContent = error.message; erro.classList.add('show'); }
+};
 
 </script>
 

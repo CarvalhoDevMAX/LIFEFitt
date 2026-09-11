@@ -9,6 +9,7 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const FacebookStrategy = require("passport-facebook").Strategy;
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 
 const app = express();
 
@@ -59,7 +60,8 @@ app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(
   cors({
     origin: new URL(FRONTEND_URL).origin,
-    credentials: true
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
 
@@ -87,6 +89,24 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(async (req, res, next) => {
+  try {
+    const token = String(req.get("authorization") || "").replace(/^Bearer\s+/i, "");
+    const payload = verifyToken(token);
+    if (!payload) return next();
+    if (payload.kind === "moderator") {
+      req.authModerator = true;
+      req.authModeratorName = payload.name;
+      return next();
+    }
+    if (payload.kind === "user" && !req.user && ObjectId.isValid(payload.sub)) {
+      await connectDB();
+      req.user = await users.findOne({ _id: new ObjectId(payload.sub) });
+    }
+    next();
+  } catch (error) { next(error); }
+});
 
 passport.serializeUser((user, done) => {
   done(null, user._id.toString());
@@ -316,7 +336,8 @@ function startOAuth(provider) {
           delete req.session.oauthIntent;
 
           redirectFrontend(res, {
-            auth_success: provider
+            auth_success: provider,
+            auth_token: issueUserToken(user)
           });
         });
       })(req, res, next);
@@ -378,7 +399,8 @@ app.post("/api/auth/register", loginLimiter, async (req, res, next) => {
       if (error) return next(error);
 
       res.status(201).json({
-        user: publicUser(user)
+        user: publicUser(user),
+        token: issueUserToken(user)
       });
     });
   } catch (error) {
@@ -418,7 +440,8 @@ app.post("/api/auth/login", loginLimiter, async (req, res, next) => {
       if (error) return next(error);
 
       res.json({
-        user: publicUser(user)
+        user: publicUser(user),
+        token: issueUserToken(user)
       });
     });
   } catch (error) {
@@ -602,8 +625,38 @@ app.patch("/api/auth/profile", async (req, res, next) => {
 });
 
 function requireModerator(req, res, next) {
-  if (req.session && req.session.isModerator === true) return next();
+  if ((req.session && req.session.isModerator === true) || req.authModerator === true) return next();
   res.status(401).json({ error: "Acesso de moderador necessário." });
+}
+
+/* Token assinado: permite o login funcionar também quando o navegador móvel
+   bloqueia cookies entre GitHub Pages e Render. */
+function base64Url(value) {
+  return Buffer.from(value).toString("base64url");
+}
+
+function signToken(payload) {
+  const body = base64Url(JSON.stringify(payload));
+  const signature = crypto.createHmac("sha256", process.env.SESSION_SECRET).update(body).digest("base64url");
+  return `${body}.${signature}`;
+}
+
+function verifyToken(token) {
+  if (typeof token !== "string" || !token.includes(".")) return null;
+  const [body, signature] = token.split(".");
+  const expected = crypto.createHmac("sha256", process.env.SESSION_SECRET).update(body).digest("base64url");
+  const valid = signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  if (!valid) return null;
+  const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+  return payload.exp > Math.floor(Date.now() / 1000) ? payload : null;
+}
+
+function issueUserToken(user) {
+  return signToken({ kind: "user", sub: user._id.toString(), exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 14 });
+}
+
+function issueModeratorToken(name) {
+  return signToken({ kind: "moderator", name, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8 });
 }
 
 app.post("/api/admin/login", loginLimiter, (req, res) => {
@@ -615,7 +668,7 @@ app.post("/api/admin/login", loginLimiter, (req, res) => {
   if (username !== expectedUser || password !== expectedPassword) return res.status(401).json({ error: "Usuário ou senha incorretos." });
   req.session.isModerator = true;
   req.session.moderatorName = expectedUser;
-  req.session.save(error => error ? res.status(500).json({ error: "Não foi possível iniciar a sessão." }) : res.json({ name: expectedUser }));
+  req.session.save(error => error ? res.status(500).json({ error: "Não foi possível iniciar a sessão." }) : res.json({ name: expectedUser, token: issueModeratorToken(expectedUser) }));
 });
 
 app.get("/api/admin/users", requireModerator, async (req, res, next) => {
