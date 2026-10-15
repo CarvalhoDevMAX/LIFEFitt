@@ -795,11 +795,13 @@ footer{ margin-top:96px; padding:60px 0 30px; border-top:1px solid var(--linha);
    MODAL
 ========================================================= */
 .modal-overlay{
-  position:fixed; inset:0; background:rgba(12,25,20,.68); backdrop-filter:blur(3px);
-  display:none; align-items:center; justify-content:center; z-index:2000; padding:24px;
+  position:fixed; inset:0; margin:0; width:100%; height:100%; max-width:none; max-height:none;
+  border:0; color:inherit; background:rgba(12,25,20,.68); backdrop-filter:blur(3px);
+  display:none; align-items:center; justify-content:center; z-index:3100; padding:24px;
   opacity:0; transition: opacity .25s var(--ease);
 }
-.modal-overlay.show{ display:flex; }
+.modal-overlay[open], .modal-overlay.show{ display:flex; }
+.modal-overlay::backdrop{ background:transparent; }
 .modal-overlay.show.in{ opacity:1; }
 
 .modal{
@@ -2539,9 +2541,9 @@ img, video, iframe, table, input, select, textarea, button {
 <!-- =========================================================
      MODAL DE RECEITA
 ========================================================= -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+<dialog class="modal-overlay" id="modalOverlay" aria-label="Detalhes da receita" onclick="closeModalOutside(event)">
   <div class="modal" id="modalContent"></div>
-</div>
+</dialog>
 
 <!-- =========================================================
      MODAL DE CADASTRO / LOGIN
@@ -3759,7 +3761,10 @@ function openRecipe(r){
       <div class="recipe-rating-block" id="recipeRatingBlock"></div>
     </div>`;
   const overlay = document.getElementById("modalOverlay");
+  // Mantém a receita acima dos painéis de conta, favoritos e cardápio.
+  if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
   overlay.classList.add("show");
+  if (!overlay.open) overlay.showModal();
   document.body.classList.add("modal-open");
   requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add("in")));
   renderBlocoAvaliacaoReceita(r.id);
@@ -3769,7 +3774,10 @@ function closeModal(){
   const overlay = document.getElementById("modalOverlay");
   overlay.classList.remove("in");
   document.body.classList.remove("modal-open");
-  setTimeout(() => overlay.classList.remove("show"), 250);
+  setTimeout(() => {
+    overlay.classList.remove("show");
+    if (overlay.open) overlay.close();
+  }, 250);
 }
 
 function closeModalOutside(e){
@@ -5413,7 +5421,6 @@ function abrirQuestionarioPerfil(prefill){
   abrirQuestionarioPerfilBase(prefill);
 }
 function abrirReceitaDoCardapio(id){
-  if(document.getElementById("accountPage").classList.contains("show")) closeAccountPage();
   openRecipeById(id);
 }
 
@@ -6009,7 +6016,6 @@ window.loadModUsers = async function () {
 };
 /* Cole este bloco no final do JavaScript do index.html. */
 
-const abrirReceitaNormal = window.openRecipeById;
 
 function abrirPainelNoLogin(titulo, conteudo) {
   const modal = document.getElementById('authModal');
@@ -6035,18 +6041,7 @@ window.openLegal = function (tipo) {
   abrirPainelNoLogin(tipo === 'privacy' ? 'Política de Privacidade' : 'Termos de Uso', conteudo);
 };
 
-window.openRecipeById = function (id) {
-  const loginAberto = document.getElementById('authOverlay')?.classList.contains('show');
-  if (!loginAberto) return abrirReceitaNormal(id);
-  const receita = getAllRecipes().find(item => item.id === id);
-  if (!receita) return;
-  abrirPainelNoLogin(receita.nome, `
-    <img src="${receita.imagem}" alt="${receita.nome}" style="width:100%;max-height:190px;object-fit:cover;border-radius:14px;margin-bottom:14px">
-    <p><strong>${receita.calorias} kcal</strong> · ${receita.tempo} min · ${receita.porcoes} porções</p>
-    <h3>Ingredientes</h3><ul>${receita.ingredientes.map(item => `<li>${item}</li>`).join('')}</ul>
-    <h3>Modo de preparo</h3><ol>${receita.passos.map(item => `<li>${item}</li>`).join('')}</ol>
-  `);
-};
+
 
 window.loadModUsers = async function () {
   const tbody = document.getElementById('modTableBody');
