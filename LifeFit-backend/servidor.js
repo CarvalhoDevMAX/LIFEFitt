@@ -10,7 +10,6 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const FacebookStrategy = require("passport-facebook").Strategy;
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 
 const app = express();
 
@@ -58,11 +57,12 @@ app.set("trust proxy", 1);
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
 
-const allowedOrigins = [
+const allowedOrigins = [...new Set([
   new URL(FRONTEND_URL).origin,
+  ...String(process.env.ALLOWED_ORIGINS || "").split(",").map((value) => value.trim()).filter(Boolean),
   "http://127.0.0.1:3000",
   "http://localhost:3000"
-];
+])];
 
 app.use(
   cors({
@@ -141,16 +141,13 @@ function emailOf(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function getMailTransporter() {
-  const user = String(process.env.SMTP_USER || "").trim();
-  const pass = String(process.env.SMTP_PASS || "").replace(/\s+/g, "");
-  if (!user || !pass) throw new Error("Configure SMTP_USER e SMTP_PASS no Render.");
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: { user, pass }
-  });
+function getBrevoConfig() {
+  const apiKey = String(process.env.BREVO_API_KEY || "").trim();
+  const senderEmail = String(process.env.BREVO_SENDER_EMAIL || "").trim();
+  if (!apiKey || !senderEmail) {
+    throw new Error("Configure BREVO_API_KEY e BREVO_SENDER_EMAIL no Render.");
+  }
+  return { apiKey, senderEmail };
 }
 
 function makeEmailVerificationCode() {
@@ -164,14 +161,26 @@ function hashEmailVerificationCode(email, code) {
 }
 
 async function sendEmailVerificationCode(email, code) {
-  const user = String(process.env.SMTP_USER || "").trim();
-  await getMailTransporter().sendMail({
-    from: `LifeFIT <${user}>`,
-    to: email,
-    subject: "Confirme seu e-mail no LifeFIT",
-    text: `Seu código de confirmação é ${code}. Ele expira em 10 minutos.`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;color:#17362c"><h2>Confirme seu e-mail</h2><p>Use este código para concluir seu cadastro no LifeFIT:</p><p style="font-size:30px;font-weight:bold;letter-spacing:8px;color:#155c3d">${code}</p><p>O código expira em 10 minutos. Se você não pediu este cadastro, ignore esta mensagem.</p></div>`
+  const { apiKey, senderEmail } = getBrevoConfig();
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      sender: { name: "LifeFIT", email: senderEmail },
+      to: [{ email }],
+      subject: "Confirme seu e-mail no LifeFIT",
+      textContent: `Seu código de confirmação é ${code}. Ele expira em 10 minutos.`,
+      htmlContent: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;color:#17362c"><h2>Confirme seu e-mail</h2><p>Use este código para concluir seu cadastro no LifeFIT:</p><p style="font-size:30px;font-weight:bold;letter-spacing:8px;color:#155c3d">${code}</p><p>O código expira em 10 minutos. Se você não pediu este cadastro, ignore esta mensagem.</p></div>`
+    })
   });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Brevo HTTP ${response.status}: ${detail.slice(0, 500)}`);
+  }
 }
 function publicUser(user) {
   return {
@@ -393,7 +402,7 @@ function startOAuth(provider) {
 app.post("/api/auth/register", loginLimiter, async (req, res, next) => {
   try {
     await connectDB();
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
       return res.status(503).json({ error: "O envio de e-mail ainda não foi configurado." });
     }
 
@@ -869,3 +878,4 @@ process.on("SIGTERM", async () => {
   if (client) await client.close();
   process.exit(0);
 });
+
