@@ -672,15 +672,30 @@ function issueModeratorToken(name) {
 }
 
 app.post("/api/admin/login", loginLimiter, (req, res) => {
-  const expectedUser = String(process.env.MODERATOR_USERNAME || "").trim().toUpperCase();
-  const expectedPassword = String(process.env.MODERATOR_PASSWORD || "");
   const username = String(req.body.username || "").trim().toUpperCase();
   const password = String(req.body.password || "");
-  if (!expectedUser || !expectedPassword) return res.status(503).json({ error: "Moderador ainda não foi configurado." });
-  if (username !== expectedUser || password !== expectedPassword) return res.status(401).json({ error: "Usuário ou senha incorretos." });
+  const moderators = Object.keys(process.env)
+    .filter(key => /^MODERATOR_USERNAME\d*$/.test(key))
+    .map(key => {
+      const suffix = key.slice("MODERATOR_USERNAME".length);
+      const name = String(process.env[key] || "").trim().toUpperCase();
+      const secret = String(process.env[`MODERATOR_PASSWORD${suffix}`] || "");
+      return name && secret ? { name, secret } : null;
+    })
+    .filter(Boolean);
+
+  if (moderators.length === 0) {
+    return res.status(503).json({ error: "Moderador ainda não foi configurado." });
+  }
+
+  const moderator = moderators.find(item => item.name === username && item.secret === password);
+  if (!moderator) return res.status(401).json({ error: "Usuário ou senha incorretos." });
+
   req.session.isModerator = true;
-  req.session.moderatorName = expectedUser;
-  req.session.save(error => error ? res.status(500).json({ error: "Não foi possível iniciar a sessão." }) : res.json({ name: expectedUser, token: issueModeratorToken(expectedUser) }));
+  req.session.moderatorName = moderator.name;
+  req.session.save(error => error
+    ? res.status(500).json({ error: "Não foi possível iniciar a sessão." })
+    : res.json({ name: moderator.name, token: issueModeratorToken(moderator.name) }));
 });
 
 app.get("/api/admin/users", requireModerator, async (req, res, next) => {
