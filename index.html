@@ -6547,6 +6547,135 @@ document.getElementById('searchInput')?.addEventListener('keydown', function (ev
   }
 });
 
+/* Verificação de e-mail por código, enviada pelo backend. */
+window.lifefitEmailPendente = "";
+
+window.mostrarFormularioVerificacaoEmail = function (email) {
+  window.lifefitEmailPendente = email;
+  const wrap = document.getElementById("authFormWrap");
+  wrap.innerHTML = `
+    <h2>Confirme seu e-mail</h2>
+    <p class="auth-sub">Enviamos um código de 6 dígitos para <strong>${escapeHtml(email)}</strong>. Ele expira em 10 minutos.</p>
+    <form onsubmit="confirmarCodigoEmail(event)">
+      <div class="auth-field"><label for="emailVerificationCode">Código de confirmação</label><input id="emailVerificationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" required></div>
+      <button class="auth-submit" type="submit">Confirmar e-mail</button>
+    </form>
+    <p class="auth-switch">Não recebeu? <button type="button" onclick="reenviarCodigoEmail()">Enviar outro código</button></p>
+    <p class="auth-switch"><button type="button" onclick="switchAuthTab('signup')">Voltar ao cadastro</button></p>
+  `;
+};
+
+window.confirmarCodigoEmail = async function (event) {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('[type="submit"]');
+  const code = document.getElementById("emailVerificationCode").value.trim();
+  try {
+    setBusy(button, true, "Conferindo código...");
+    const { user } = await api("/verify-email", {
+      method: "POST",
+      body: JSON.stringify({ email: window.lifefitEmailPendente, code })
+    });
+    window.lifefitEmailPendente = "";
+    authSuccess(user);
+    closeAuth();
+    showToast("E-mail confirmado. Conta criada com sucesso!");
+  } catch (error) {
+    showToast(message(error));
+  } finally {
+    setBusy(button, false);
+  }
+};
+
+window.reenviarCodigoEmail = async function () {
+  try {
+    await api("/resend-verification", {
+      method: "POST",
+      body: JSON.stringify({ email: window.lifefitEmailPendente })
+    });
+    showToast("Se o cadastro estiver pendente, enviamos um novo código.");
+  } catch (error) {
+    showToast(message(error));
+  }
+};
+
+window.handleSignup = async function (event) {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('[type="submit"]');
+  const name = document.getElementById("signupName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+  const password = document.getElementById("signupPass").value;
+  const passwordConfirm = document.getElementById("signupPassConfirm").value;
+  if (password !== passwordConfirm) return showToast("As senhas não coincidem.");
+  if (!document.getElementById("signupTerms").checked) return showToast("Você precisa aceitar os Termos de Uso e a Política de Privacidade.");
+
+  const peso = parseFloat(document.getElementById("signupPeso")?.value || "");
+  const altura = parseFloat(document.getElementById("signupAltura")?.value || "");
+  const imcResult = peso > 0 && altura > 0 ? calcularIMC(peso, altura) : null;
+  const profile = {
+    objetivo: selectedGoal || null,
+    peso: peso > 0 ? peso : null,
+    altura: altura > 0 ? altura : null,
+    imc: imcResult ? imcResult.valor : null,
+    imcCategoria: imcResult ? imcResult.categoria : null,
+    perfilAlimentar: null,
+    perfilAlimentarCompleto: false,
+    favoritos: [],
+    cardapioSemanal: null
+  };
+
+  try {
+    setBusy(button, true, "Enviando código...");
+    const response = await api("/register", {
+      method: "POST",
+      body: JSON.stringify({ name, email, password, termsAccepted: true, profile })
+    });
+    if (response.emailVerificationRequired) {
+      window.mostrarFormularioVerificacaoEmail(response.email || email);
+      showToast("Código enviado. Confira sua caixa de entrada e o spam.");
+      return;
+    }
+    if (response.user) {
+      authSuccess(response.user);
+      closeAuth();
+      showToast("Conta criada com sucesso.");
+    }
+  } catch (error) {
+    showToast(message(error));
+  } finally {
+    setBusy(button, false);
+  }
+};
+
+window.handleLogin = async function (event) {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('[type="submit"]');
+  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+  const password = document.getElementById("loginPass").value;
+  try {
+    setBusy(button, true, "Entrando...");
+    const { user } = await api("/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password })
+    });
+    authSuccess(user);
+    closeAuth();
+    showToast("Login realizado!");
+  } catch (error) {
+    if (error.message === "Seu e-mail ainda não foi confirmado.") {
+      window.mostrarFormularioVerificacaoEmail(email);
+      try {
+        await api("/resend-verification", { method: "POST", body: JSON.stringify({ email }) });
+        showToast("Enviamos um novo código para confirmar seu e-mail.");
+      } catch (resendError) {
+        showToast(message(resendError));
+      }
+    } else {
+      showToast(message(error));
+    }
+  } finally {
+    setBusy(button, false);
+  }
+};
 </script>
 
 </body>

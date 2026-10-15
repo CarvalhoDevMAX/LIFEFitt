@@ -10,6 +10,7 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const FacebookStrategy = require("passport-facebook").Strategy;
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 
 const app = express();
 
@@ -140,6 +141,38 @@ function emailOf(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function getMailTransporter() {
+  const user = String(process.env.SMTP_USER || "").trim();
+  const pass = String(process.env.SMTP_PASS || "").replace(/\s+/g, "");
+  if (!user || !pass) throw new Error("Configure SMTP_USER e SMTP_PASS no Render.");
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user, pass }
+  });
+}
+
+function makeEmailVerificationCode() {
+  return String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+}
+
+function hashEmailVerificationCode(email, code) {
+  return crypto.createHmac("sha256", String(process.env.SESSION_SECRET || ""))
+    .update(`${email}:${code}`)
+    .digest("hex");
+}
+
+async function sendEmailVerificationCode(email, code) {
+  const user = String(process.env.SMTP_USER || "").trim();
+  await getMailTransporter().sendMail({
+    from: `LifeFIT <${user}>`,
+    to: email,
+    subject: "Confirme seu e-mail no LifeFIT",
+    text: `Seu código de confirmação é ${code}. Ele expira em 10 minutos.`,
+    html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;color:#17362c"><h2>Confirme seu e-mail</h2><p>Use este código para concluir seu cadastro no LifeFIT:</p><p style="font-size:30px;font-weight:bold;letter-spacing:8px;color:#155c3d">${code}</p><p>O código expira em 10 minutos. Se você não pediu este cadastro, ignore esta mensagem.</p></div>`
+  });
+}
 function publicUser(user) {
   return {
     id: user._id.toString(),
@@ -360,42 +393,35 @@ function startOAuth(provider) {
 app.post("/api/auth/register", loginLimiter, async (req, res, next) => {
   try {
     await connectDB();
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      return res.status(503).json({ error: "O envio de e-mail ainda não foi configurado." });
+    }
 
     const name = String(req.body.name || "").trim();
     const email = emailOf(req.body.email);
     const password = req.body.password;
     const profile = req.body.profile || {};
-
-    if (
-      !name ||
-      !/^\S+@\S+\.\S+$/.test(email) ||
-      typeof password !== "string" ||
-      password.length < 8
-    ) {
-      return res.status(400).json({
-        error: "Dados de cadastro inválidos."
-      });
+    if (!name || !/^\S+@\S+\.\S+$/.test(email) || typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ error: "Dados de cadastro inválidos." });
     }
-
     if (req.body.termsAccepted !== true) {
-      return res.status(400).json({
-        error:
-          "Você precisa aceitar os Termos de Uso e a Política de Privacidade."
-      });
+      return res.status(400).json({ error: "Você precisa aceitar os Termos de Uso e a Política de Privacidade." });
     }
-
     if (await users.findOne({ email })) {
-      return res.status(409).json({
-        error: "Este e-mail já possui uma conta no LifeFIT."
-      });
+      return res.status(409).json({ error: "Este e-mail já possui uma conta no LifeFIT. Se o cadastro ainda não foi confirmado, entre e solicite um novo código." });
     }
 
+    const code = makeEmailVerificationCode();
     const user = {
       name,
       email,
       passwordHash: await bcrypt.hash(password, 12),
       provider: "local",
       providers: [],
+      emailVerified: false,
+      emailVerificationCodeHash: hashEmailVerificationCode(email, code),
+      emailVerificationExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      emailVerificationAttempts: 0,
       termsAccepted: true,
       termsAcceptedAt: new Date(),
       termsVersion: TERMS_VERSION,
@@ -405,27 +431,84 @@ app.post("/api/auth/register", loginLimiter, async (req, res, next) => {
     };
 
     const result = await users.insertOne(user);
-    user._id = result.insertedId;
-
-    req.logIn(user, (error) => {
-      if (error) return next(error);
-
-      res.status(201).json({
-        user: publicUser(user),
-        token: issueUserToken(user)
-      });
-    });
-  } catch (error) {
-    if (error.code === 11000) {
-      return res.status(409).json({
-        error: "Este e-mail já possui uma conta no LifeFIT."
-      });
+    try {
+      await sendEmailVerificationCode(email, code);
+    } catch (mailError) {
+      await users.deleteOne({ _id: result.insertedId });
+      console.error("Erro ao enviar código de confirmação:", mailError.message);
+      return res.status(503).json({ error: "Não foi possível enviar o código. Confira a configuração de e-mail e tente novamente." });
     }
 
+    return res.status(201).json({ emailVerificationRequired: true, email });
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ error: "Este e-mail já possui uma conta no LifeFIT." });
     next(error);
   }
 });
 
+app.post("/api/auth/verify-email", loginLimiter, async (req, res, next) => {
+  try {
+    await connectDB();
+    const email = emailOf(req.body.email);
+    const code = String(req.body.code || "").trim();
+    if (!/^\S+@\S+\.\S+$/.test(email) || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: "Informe o e-mail e o código de 6 dígitos." });
+    }
+
+    const user = await users.findOne({ email, provider: "local", emailVerified: false });
+    if (!user) return res.status(400).json({ error: "Cadastro pendente não encontrado. Tente criar a conta novamente." });
+    if (user.emailVerificationAttempts >= 5) {
+      return res.status(429).json({ error: "Muitas tentativas. Solicite um novo código." });
+    }
+    if (!user.emailVerificationExpiresAt || new Date(user.emailVerificationExpiresAt) <= new Date()) {
+      return res.status(400).json({ error: "O código expirou. Solicite um novo código." });
+    }
+
+    const expected = Buffer.from(String(user.emailVerificationCodeHash || ""), "hex");
+    const actual = Buffer.from(hashEmailVerificationCode(email, code), "hex");
+    const validCode = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+    if (!validCode) {
+      await users.updateOne({ _id: user._id }, { $inc: { emailVerificationAttempts: 1 } });
+      return res.status(400).json({ error: "Código incorreto. Confira o e-mail e tente novamente." });
+    }
+
+    await users.updateOne({ _id: user._id }, {
+      $set: { emailVerified: true, updatedAt: new Date() },
+      $unset: { emailVerificationCodeHash: "", emailVerificationExpiresAt: "", emailVerificationAttempts: "" }
+    });
+    user.emailVerified = true;
+
+    req.logIn(user, error => {
+      if (error) return next(error);
+      return res.json({ user: publicUser(user), token: issueUserToken(user) });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/auth/resend-verification", loginLimiter, async (req, res, next) => {
+  try {
+    await connectDB();
+    const email = emailOf(req.body.email);
+    if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: "Informe um e-mail válido." });
+    const user = await users.findOne({ email, provider: "local", emailVerified: false });
+    if (!user) return res.json({ ok: true });
+
+    const code = makeEmailVerificationCode();
+    await users.updateOne({ _id: user._id }, { $set: {
+      emailVerificationCodeHash: hashEmailVerificationCode(email, code),
+      emailVerificationExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      emailVerificationAttempts: 0,
+      updatedAt: new Date()
+    } });
+    await sendEmailVerificationCode(email, code);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Erro ao reenviar código de confirmação:", error.message);
+    return res.status(503).json({ error: "Não foi possível reenviar o código agora." });
+  }
+});
 app.post("/api/auth/login", loginLimiter, async (req, res, next) => {
   try {
     await connectDB();
@@ -442,6 +525,9 @@ app.post("/api/auth/login", loginLimiter, async (req, res, next) => {
         user.passwordHash
       ));
 
+    if (user && user.provider === "local" && user.emailVerified === false) {
+      return res.status(403).json({ error: "Seu e-mail ainda não foi confirmado." });
+    }
     if (!validPassword) {
       return res.status(401).json({
         error: "E-mail ou senha incorretos."
