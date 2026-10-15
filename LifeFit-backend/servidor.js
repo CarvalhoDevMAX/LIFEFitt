@@ -28,6 +28,7 @@ let client;
 let db;
 let storage;
 let users;
+let newsletterSubscribers;
 
 async function connectDB() {
   if (db) return db;
@@ -38,6 +39,7 @@ async function connectDB() {
   db = client.db(DB_NAME);
   storage = db.collection("storage");
   users = db.collection("users");
+  newsletterSubscribers = db.collection("newsletter_subscribers");
 
   await Promise.all([
     storage.createIndex(
@@ -45,6 +47,7 @@ async function connectDB() {
       { unique: true }
     ),
     users.createIndex({ email: 1 }, { unique: true }),
+    newsletterSubscribers.createIndex({ email: 1 }, { unique: true }),
     users.createIndex({ googleId: 1 }, { unique: true, sparse: true }),
     users.createIndex({ facebookId: 1 }, { unique: true, sparse: true })
   ]);
@@ -175,6 +178,28 @@ async function sendEmailVerificationCode(email, code) {
       subject: "Confirme seu e-mail no LifeFIT",
       textContent: `Seu código de confirmação é ${code}. Ele expira em 10 minutos.`,
       htmlContent: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;color:#17362c"><h2>Confirme seu e-mail</h2><p>Use este código para concluir seu cadastro no LifeFIT:</p><p style="font-size:30px;font-weight:bold;letter-spacing:8px;color:#155c3d">${code}</p><p>O código expira em 10 minutos. Se você não pediu este cadastro, ignore esta mensagem.</p></div>`
+    })
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Brevo HTTP ${response.status}: ${detail.slice(0, 500)}`);
+  }
+}
+async function sendNewsletterWelcomeEmail(email) {
+  const { apiKey, senderEmail } = getBrevoConfig();
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      sender: { name: "LifeFIT", email: senderEmail },
+      to: [{ email }],
+      subject: "Inscrição confirmada — novidades LifeFIT",
+      textContent: "Sua inscrição na newsletter do LifeFIT foi confirmada. Você receberá receitas, dicas de macros e novidades sobre shakes e bebidas funcionais. Se não fez essa inscrição, ignore esta mensagem.",
+      htmlContent: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:28px;color:#17362c"><h2 style="color:#155c3d">Inscrição confirmada! 🌿</h2><p>Você se inscreveu para receber novidades do LifeFIT.</p><p>Enviaremos receitas, dicas de macros e novidades sobre shakes e bebidas funcionais.</p><p>Se você não fez essa inscrição, pode ignorar esta mensagem.</p></div>`
     })
   });
   if (!response.ok) {
@@ -399,6 +424,55 @@ function startOAuth(provider) {
   );
 });
 
+const newsletterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 8,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.post("/api/newsletter/subscribe", newsletterLimiter, async (req, res) => {
+  try {
+    const email = emailOf(req.body.email);
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ error: "Informe um e-mail válido." });
+    }
+    if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
+      return res.status(503).json({ error: "O envio de e-mail ainda não foi configurado." });
+    }
+
+    await connectDB();
+    const existing = await newsletterSubscribers.findOne({ email });
+    if (existing) {
+      return res.json({ ok: true, alreadySubscribed: true });
+    }
+
+    const record = await newsletterSubscribers.insertOne({
+      email,
+      status: "sending",
+      createdAt: new Date()
+    });
+
+    try {
+      await sendNewsletterWelcomeEmail(email);
+      await newsletterSubscribers.updateOne(
+        { _id: record.insertedId },
+        { $set: { status: "subscribed", subscribedAt: new Date() } }
+      );
+      return res.status(201).json({ ok: true, alreadySubscribed: false });
+    } catch (mailError) {
+      await newsletterSubscribers.deleteOne({ _id: record.insertedId });
+      console.error("Erro ao enviar e-mail da newsletter:", mailError.message);
+      return res.status(503).json({ error: "Não foi possível enviar o e-mail agora. Tente novamente." });
+    }
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.json({ ok: true, alreadySubscribed: true });
+    }
+    console.error("Erro na inscrição da newsletter:", error.message);
+    return res.status(500).json({ error: "Não foi possível concluir a inscrição agora." });
+  }
+});
 app.post("/api/auth/register", loginLimiter, async (req, res, next) => {
   try {
     await connectDB();
@@ -878,4 +952,5 @@ process.on("SIGTERM", async () => {
   if (client) await client.close();
   process.exit(0);
 });
+
 

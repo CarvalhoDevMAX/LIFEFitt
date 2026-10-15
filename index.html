@@ -3791,14 +3791,38 @@ document.addEventListener("keydown", (e) => {
 /* =========================================================
    NEWSLETTER
 ========================================================= */
-function handleNewsletter(e){
+async function handleNewsletter(e){
   e.preventDefault();
+  const form = e.currentTarget;
+  const emailInput = document.getElementById("newsletterEmail");
   const msg = document.getElementById("newsletterMsg");
+  const button = form.querySelector('button[type="submit"]');
+  const email = emailInput.value.trim().toLowerCase();
   msg.classList.remove("show");
-  void msg.offsetWidth;
-  msg.classList.add("show");
-  document.getElementById("newsletterEmail").value = "";
-  setTimeout(() => msg.classList.remove("show"), 5000);
+  button.disabled = true;
+  button.textContent = "Inscrevendo...";
+
+  try {
+    const response = await fetch("https://lifefitt.onrender.com/api/newsletter/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Não foi possível concluir a inscrição.");
+
+    msg.textContent = data.alreadySubscribed
+      ? "Este e-mail já está inscrito na newsletter."
+      : "Inscrição confirmada! Enviamos um e-mail de boas-vindas. Confira sua caixa de entrada e o spam.";
+    emailInput.value = "";
+  } catch (error) {
+    msg.textContent = error.message || "Não foi possível concluir a inscrição. Tente novamente.";
+  } finally {
+    msg.classList.add("show");
+    button.disabled = false;
+    button.textContent = "Inscrever-se";
+    setTimeout(() => msg.classList.remove("show"), 7000);
+  }
 }
 
 /* =========================================================
@@ -6681,4 +6705,5 @@ window.handleLogin = async function (event) {
 
 </body>
 </html>
+
 
