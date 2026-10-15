@@ -6577,8 +6577,23 @@ window.confirmarCodigoEmail = async function (event) {
     });
     window.lifefitEmailPendente = "";
     authSuccess(user);
-    closeAuth();
-    showToast("E-mail confirmado. Conta criada com sucesso!");
+
+    const profile = user.profile || {};
+    const primeiroNome = String(user.name || "").trim().split(/\s+/)[0] || "por aí";
+    const imcResult = profile.imcCategoria ? { categoria: profile.imcCategoria } : null;
+    const wrap = document.getElementById("authFormWrap");
+    wrap.innerHTML = `
+      <div class="auth-success">
+        <div class="check">✓</div>
+        <h2>Conta confirmada, ${escapeHtml(primeiroNome)}!</h2>
+        <p>Seu plano está pronto. Complete agora o perfil alimentar para receber recomendações compatíveis.</p>
+      </div>
+      ${profile.objetivo ? gerarPlanoHtml(profile.objetivo, imcResult) : ""}
+      <button class="auth-submit" style="margin-top:18px" onclick="closeAuth();abrirQuestionarioPerfil()">
+        Continuar para o perfil alimentar
+      </button>
+    `;
+    showToast("E-mail confirmado! Agora complete seu perfil alimentar.");
   } catch (error) {
     showToast(message(error));
   } finally {
